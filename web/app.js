@@ -229,7 +229,7 @@ function readSettings() {
   const b = $("#banner");
   if (S.replay) {  // 녹화 시연 배너 유지
     b.className = "cls-banner";
-    b.style.cssText = "background:#1f2a3d;color:#9ecbff;border-color:#4a90d9";
+    b.style.cssText = "background:var(--info-bg);color:var(--info-fg);border-color:var(--info-line)";
     b.textContent = `녹화된 시연 · ${S.replayAt} 실제 분석 결과 재생 (분석 서버 없이 동작)`;
     return;
   }
@@ -638,7 +638,7 @@ function offlineMode(info) {
   // 노트북 분석 서버가 꺼져 있을 때: 지난 분석 기록만 보여줌
   const when = info.last ? ` (마지막 신호: ${new Date(info.last).toLocaleString("ko-KR")})` : "";
   $("#banner").className = "cls-banner";
-  $("#banner").style.cssText = "background:#3d1f1f;color:#ff8a80;border-color:#c62828";
+  $("#banner").style.cssText = "background:var(--err-bg);color:var(--err-fg);border-color:var(--nogo)";
   $("#banner").textContent = "분석 서버 꺼짐 · 지난 분석 기록만 볼 수 있습니다";
   document.querySelector("main").insertAdjacentHTML("afterbegin",
     `<div class="warn" style="font-size:.95rem">⚠️ ${esc(info.why)}${esc(when)}.<br>
@@ -681,13 +681,13 @@ function startReplay(b) {
   document.querySelector("main > .warn")?.remove();
   document.querySelectorAll('nav[data-group="main"] .tab').forEach((t) => { t.disabled = false; t.style.opacity = 1; });
   $("#sidebar").style.opacity = 1; $("#sidebar").style.pointerEvents = "";
-  $("#banner").style.cssText = "background:#1f2a3d;color:#9ecbff;border-color:#4a90d9";
+  $("#banner").style.cssText = "background:var(--info-bg);color:var(--info-fg);border-color:var(--info-line)";
   $("#banner").textContent = `녹화된 시연 · ${b.recorded_at} 실제 분석 결과 재생 (분석 서버 없이 동작)`;
   document.querySelector("header.hdr").insertAdjacentHTML("afterend",
-    `<div class="warn" style="background:#1f2a3d;color:#c9e2ff;border-color:#4a90d9;font-size:.92rem">🎬 <b>녹화된 시연</b>입니다.
+    `<div class="warn" style="background:var(--info-bg);color:var(--info-text);border-color:var(--info-line);font-size:.92rem">🎬 <b>녹화된 시연</b>입니다.
      ${esc(b.recorded_at)}에 실제로 분석한 결과(공개 도로 CCTV·시연용 ISR 영상)를 그대로 보여줍니다. 지도·결과 탭·보고서를 눌러 보세요.
      설정을 바꿔 새로 분석하려면 분석 서버(노트북)가 켜져 있어야 합니다.
-     <a href="./" style="color:#9ecbff;margin-left:6px">실시간 분석 화면으로 →</a></div>`);
+     <a href="./" style="color:var(--info-fg);margin-left:6px">실시간 분석 화면으로 →</a></div>`);
 
   setupUI();
   // 기동로
@@ -714,6 +714,12 @@ function startReplay(b) {
   showTab("main", "route");
 }
 
+// 색상 시안: 주소에 ?theme=a~d 를 붙여 미리 보기
+(function applyTheme() {
+  const t = new URLSearchParams(location.search).get("theme");
+  if (t && /^[a-z]$/.test(t)) document.documentElement.dataset.theme = t;
+})();
+
 async function init() {
   if (new URLSearchParams(location.search).has("replay")) {  // ?replay 로 바로 녹화 시연 보기
     try { return startReplay(await (await fetch("replay/replay.json", { cache: "no-store" })).json()); } catch (e) { /* 없으면 평소대로 */ }
@@ -729,7 +735,7 @@ async function init() {
   // 서버가 켜져 있어도 녹화 시연을 볼 수 있게 링크 제공
   fetch("replay/replay.json", { method: "HEAD", cache: "no-store" }).then((r) => {
     if (r.ok) document.querySelector(".hdr-sub").insertAdjacentHTML("beforeend",
-      ` <a href="?replay" style="color:#9ecbff;white-space:nowrap">🎬 녹화된 시연 보기</a>`);
+      ` <a href="?replay" style="color:var(--info-fg);white-space:nowrap">🎬 녹화된 시연 보기</a>`);
   }).catch(() => {});
   await loadRoute();
   await loadArea();
