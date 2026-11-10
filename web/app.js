@@ -60,8 +60,13 @@ const S = {
 };
 
 // ------------------------------------------------------------------ 서버 호출
+// 관리자 비밀번호: 이 브라우저 탭에서만 기억 (탭을 닫으면 사라짐)
+const adminPass = () => { try { return sessionStorage.getItem("adminPass") || ""; } catch (e) { return ""; } };
+const withAdmin = (h = {}) => (adminPass() ? { ...h, "X-Admin-Pass": adminPass() } : h);
+
 async function api(path, body) {
-  const opt = body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+  const opt = body === undefined ? { headers: withAdmin() }
+    : { method: "POST", headers: withAdmin({ "Content-Type": "application/json" }), body: JSON.stringify(body) };
   const r = await fetch(API + path, opt);
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j.detail || r.statusText);
@@ -71,7 +76,7 @@ async function api(path, body) {
 async function upload(file) {
   const fd = new FormData();
   fd.append("file", file);
-  const r = await fetch(API + "/api/upload", { method: "POST", body: fd });
+  const r = await fetch(API + "/api/upload", { method: "POST", body: fd, headers: withAdmin() });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j.detail || r.statusText);
   return j;
@@ -543,6 +548,37 @@ async function refreshUsage() {
 }
 
 // ================================================================== 시작
+// ------------------------------------------------------------------ 관리자 (공개 사이트에서 실시간 모드 열기)
+function applyAccess() {
+  const c = S.cfg;
+  $("#demo").disabled = !c.has_key || c.live_locked;
+  $("#demo-hint").textContent = c.live_locked
+    ? "공개 사이트: 실시간 모드(ITS API)는 잠겨 있습니다. 저장된 실제 CCTV와 공개 샘플 영상으로 시연합니다."
+    : "켜짐: ITS API를 부르지 않고 저장된 실제 CCTV + 공개 샘플 영상 + 시연용 ISR로 동작합니다. 끄면 실시간 모드(ITS API 호출, 월 5,000건 한도).";
+  $("#admin-box").classList.toggle("hidden", !(c.admin_available || c.admin));
+  $("#admin-login").classList.toggle("hidden", !!c.admin);
+  $("#admin-on").classList.toggle("hidden", !c.admin);
+}
+
+async function adminLogin() {
+  const pass = prompt("관리자 비밀번호를 입력하세요 (노트북 .env의 ADMIN_PASSCODE)");
+  if (!pass) return;
+  try {
+    await api("/api/admin/login", { passcode: pass });
+    try { sessionStorage.setItem("adminPass", pass.trim()); } catch (e) { /* 저장 불가 브라우저 */ }
+    S.cfg = await api("/api/config");
+    applyAccess(); renderSidebar();
+    alert("관리자 모드가 켜졌습니다. 왼쪽 '시연 모드' 스위치를 끄면 실시간 모드(ITS API)를 쓸 수 있습니다.");
+  } catch (e) { alert("로그인 실패: " + e.message); }
+}
+
+async function adminLogout() {
+  try { sessionStorage.removeItem("adminPass"); } catch (e) { /* 무시 */ }
+  S.cfg = await api("/api/config");
+  $("#demo").checked = true;
+  readSettings(); applyAccess(); renderSidebar(); loadRoute(); loadArea();
+}
+
 function offlineMode(info) {
   // 노트북 분석 서버가 꺼져 있을 때: 지난 분석 기록만 보여줌
   const when = info.last ? ` (마지막 신호: ${new Date(info.last).toLocaleString("ko-KR")})` : "";
@@ -575,8 +611,9 @@ async function init() {
     return offlineMode({ why: "분석 서버에 연결하지 못했습니다 (" + e.message + ")" });
   }
   const c = S.cfg;
-  $("#demo").disabled = !c.has_key || c.live_locked;
-  if (c.live_locked) $("#demo-hint").textContent = "공개 시연 서버: 실시간 모드(ITS API)는 잠겨 있습니다. 저장된 실제 CCTV와 공개 샘플 영상으로 시연합니다.";
+  applyAccess();
+  $("#admin-login").addEventListener("click", adminLogin);
+  $("#admin-logout").addEventListener("click", (e) => { e.preventDefault(); adminLogout(); });
   renderSidebar();
   readSettings();
 

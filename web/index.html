@@ -15,6 +15,10 @@
     <span>시연 모드 (API 호출 없음)</span>
   </label>
   <p class="hint" id="demo-hint">ITS API를 부르지 않고 저장된 실제 CCTV + 공개 샘플 영상 + 시연용 ISR로 동작합니다.</p>
+  <div id="admin-box" class="hidden">
+    <button class="btn small" id="admin-login">🔑 관리자 로그인 (실시간 모드 열기)</button>
+    <div id="admin-on" class="hint hidden">🔓 관리자 모드 · 이 탭에서만 유지 <a href="#" id="admin-logout">로그아웃</a></div>
+  </div>
   <div id="live-warn" class="warn hidden">실시간 모드: 경로·지점을 바꿀 때마다 ITS API를 호출합니다 (월 5,000건 한도). 같은 조회는 하루 동안 저장본을 씁니다.</div>
 
   <label>CCTV당 분석 시간 <b id="seconds-v">10</b>초

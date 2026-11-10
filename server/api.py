@@ -156,15 +156,54 @@ def is_public(request: Request | None) -> bool:
     return bool(forwarded) or host not in ("localhost", "127.0.0.1", "::1")
 
 
+# ------------------------------------------------------------------ 관리자 (공개 주소에서 실시간 모드 잠금 해제)
+# .env의 ADMIN_PASSCODE를 아는 사람만 공개 사이트에서 실시간 모드·시연 목록 저장을 쓸 수 있음.
+# 웹페이지는 로그인한 브라우저 탭에서만 요청마다 X-Admin-Pass 헤더로 보냄(sessionStorage, 탭 닫으면 사라짐).
+import hmac  # noqa: E402
+
+_fail: dict[str, list[float]] = {}  # 접속 IP → 최근 실패 시각 (비밀번호 대입 방지)
+FAIL_LIMIT, FAIL_WINDOW_S = 5, 600
+
+
+def _admin_pass() -> str:
+    return os.getenv("ADMIN_PASSCODE", "").strip()
+
+
+def _client_ip(request: Request) -> str:
+    return (request.headers.get("cf-connecting-ip") or request.headers.get("x-forwarded-for", "").split(",")[0]
+            or (request.client.host if request.client else "?")).strip()
+
+
+def _blocked(ip: str) -> bool:
+    now = time.time()
+    _fail[ip] = [t for t in _fail.get(ip, []) if now - t < FAIL_WINDOW_S]
+    return len(_fail[ip]) >= FAIL_LIMIT
+
+
+def is_admin(request: Request | None) -> bool:
+    if request is None or not _admin_pass():
+        return False
+    sent = request.headers.get("x-admin-pass", "")
+    ip = _client_ip(request)
+    if not sent or _blocked(ip):
+        return False
+    ok = hmac.compare_digest(sent.encode(), _admin_pass().encode())
+    if not ok:  # 다른 주소로 비밀번호를 대입해 보는 것도 실패로 셈
+        _fail.setdefault(ip, []).append(time.time())
+    return ok
+
+
 def live_locked(request: Request | None) -> bool:
-    return is_public(request) and os.getenv("ALLOW_LIVE", "0") != "1"
+    if not is_public(request) or os.getenv("ALLOW_LIVE", "0") == "1":
+        return False
+    return not is_admin(request)
 
 
 def check_mode(demo: bool, request: Request | None = None) -> None:
     if demo:
         return
     if live_locked(request):
-        raise HTTPException(403, "공개 시연 서버에서는 실시간 모드(ITS API)가 잠겨 있습니다. 시연 모드로 이용하세요.")
+        raise HTTPException(403, "공개 사이트에서는 실시간 모드(ITS API)가 잠겨 있습니다. 관리자 로그인 후 이용하세요.")
     if not HAS_KEY:
         raise HTTPException(400, "ITS 인증키가 없어 실시간 모드를 쓸 수 없습니다")
 
@@ -256,6 +295,7 @@ def config(request: Request):
     return {
         "has_key": HAS_KEY, "demo_default": True, "api_usage": api_usage(), "api_limit": API_LIMIT,
         "live_locked": live_locked(request), "public_demo": is_public(request), "max_upload_mb": 30 if is_public(request) else 200,
+        "admin": is_admin(request), "admin_available": bool(_admin_pass()) and is_public(request),
         "history_enabled": history.ENABLED,
         "places": PLACES, "demo_isr": demo_isr_json(),
         "saved_real": [{"name": s["name"], "saved_at": s.get("saved_at", "?")} for s in saved],
@@ -471,11 +511,30 @@ def job_status(jid: str):
     return JOBS[jid]
 
 
+class AdminReq(BaseModel):
+    passcode: str
+
+
+@app.post("/api/admin/login")
+def admin_login(req: AdminReq, request: Request):
+    """관리자 비밀번호 확인. 10분에 5번 틀리면 그 접속 IP는 10분간 차단."""
+    ip = _client_ip(request)
+    if not _admin_pass():
+        raise HTTPException(404, "관리자 비밀번호가 설정돼 있지 않습니다 (.env의 ADMIN_PASSCODE)")
+    if _blocked(ip):
+        raise HTTPException(429, "비밀번호를 여러 번 틀려 10분간 잠겼습니다")
+    if not hmac.compare_digest(req.passcode.strip().encode(), _admin_pass().encode()):
+        _fail.setdefault(ip, []).append(time.time())
+        raise HTTPException(401, f"비밀번호가 틀렸습니다 (남은 시도 {max(0, FAIL_LIMIT - len(_fail[ip]))}번)")
+    _fail.pop(ip, None)
+    return {"ok": True}
+
+
 @app.post("/api/save_demo")
 def save_demo(req: RouteReq, request: Request):
-    if is_public(request):
-        raise HTTPException(403, "시연 목록 저장은 노트북(localhost)에서만 할 수 있습니다")
     """실시간 모드에서 받은 경로 CCTV를 시연 목록에 저장 (이미 받은 목록 사용, 추가 API 호출 없음)."""
+    if is_public(request) and not is_admin(request):
+        raise HTTPException(403, "시연 목록 저장은 노트북(localhost) 또는 관리자 로그인 후에만 할 수 있습니다")
     if req.demo:
         raise HTTPException(400, "실시간 모드에서만 저장할 수 있습니다")
     picks = pick_evenly(route_cctvs(req.start, req.end, req.buffer_km, False), req.max_cctvs)
