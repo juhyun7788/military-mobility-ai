@@ -714,12 +714,6 @@ function startReplay(b) {
   showTab("main", "route");
 }
 
-// 색상 시안: 주소에 ?theme=a~d, b1~b3 를 붙여 미리 보기
-(function applyTheme() {
-  const t = new URLSearchParams(location.search).get("theme");
-  if (t && /^[a-z][0-9]?$/.test(t)) document.documentElement.dataset.theme = t;
-})();
-
 async function init() {
   if (new URLSearchParams(location.search).has("replay")) {  // ?replay 로 바로 녹화 시연 보기
     try { return startReplay(await (await fetch("replay/replay.json", { cache: "no-store" })).json()); } catch (e) { /* 없으면 평소대로 */ }
