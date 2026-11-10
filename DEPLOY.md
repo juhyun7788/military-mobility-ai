@@ -53,7 +53,7 @@
 
 ## 할 일 (권장)
 
-- **Supabase 비밀 키 교체:** 설정 중 채팅에 노출됐으므로 새로 만들고 예전 키 삭제
+- **Supabase 비밀 키 교체:** (선택) 설정 중 채팅에 노출됨 — 사용자 판단으로 2026-11-10 교체하지 않기로 함. 교체할 경우:
   1. Supabase → Project Settings → API Keys → Secret keys → **New secret key**
   2. `.env`의 `SUPABASE_SERVICE_KEY`를 새 키로 바꾸고 `run_public.bat` 다시 실행
   3. 예전 키 옆 ⋮ → Delete
