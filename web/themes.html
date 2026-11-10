@@ -35,7 +35,7 @@
   document.getElementById("grid").innerHTML = T.map(([k, name, desc]) => {
     const url = "./?replay" + (k ? "&theme=" + k : "");
     return `<div class="card"><h2>${name}</h2><p class="desc">${desc}</p>
-      <div class="frame"><iframe src="${url}" loading="lazy" title="${name}"></iframe></div>
+      <div class="frame"><iframe src="${url}" title="${name}"></iframe></div>
       <a href="${url}" target="_blank" rel="noopener">크게 보기 →</a></div>`;
   }).join("");
 </script>
