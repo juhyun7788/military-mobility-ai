@@ -420,8 +420,23 @@ function areaIsrPos() {
   }).filter((i) => i.dist <= areaRadius()).sort((a, b) => a.dist - b.dist);
 }
 
+// 지점 입력이 아직 반영되지 않았음을 단추에 표시
+function areaPending(on) {
+  $("#area-apply").classList.toggle("primary", on);
+  $("#area-apply-hint").textContent = on ? "⚠️ 입력한 지점이 아직 반영되지 않았습니다. 단추나 Enter를 누르세요." : "위도·경도를 고친 뒤 이 단추나 Enter를 누르세요.";
+}
+
+async function applyArea() {
+  if (S.replay) return;
+  const lat = +$("#area-lat").value, lon = +$("#area-lon").value;
+  if (!(lat >= 33 && lat <= 39 && lon >= 124 && lon <= 132)) return alert("위도 33~39, 경도 124~132 범위(대한민국)로 입력하세요.");
+  const b = $("#area-apply"); b.disabled = true; b.textContent = "⏳ 주변 CCTV 찾는 중…";
+  try { await loadArea(); } finally { b.disabled = false; b.textContent = "📍 지점 반영 (주변 CCTV 다시 찾기)"; }
+}
+
 async function loadArea() {
   if (S.replay) return;
+  areaPending(false);
   $("#area-error").classList.add("hidden");
   const [lat, lon] = areaPt();
   try {
@@ -669,7 +684,7 @@ function startReplay(b) {
   S.area.result = b.area.result; S.area.resultKey = areaKey();
   $("#area-isr-panel").open = false;
   // 설정·입력은 잠금 (지도 바탕 선택·결과 탭은 그대로 사용)
-  document.querySelectorAll('#sidebar input, #sidebar button, #tab-route select, #tab-route input:not([name^="st-"]), #tab-area select, #tab-area input:not([name^="st-"]), #route-isr-add, #route-isr-clear, #area-isr-add, #area-isr-clear')
+  document.querySelectorAll('#sidebar input, #sidebar button, #tab-route select, #tab-route input:not([name^="st-"]), #tab-area select, #tab-area input:not([name^="st-"]), #route-isr-add, #route-isr-clear, #area-isr-add, #area-isr-clear, #area-apply')
     .forEach((e) => (e.disabled = true));
   ["#route-run", "#area-run"].forEach((s) => { $(s).disabled = true; $(s).textContent = "녹화된 시연 (새 분석은 분석 서버 필요)"; });
   showTab("main", "route");
@@ -798,8 +813,12 @@ function setupUI() {
     const p = c.places[$("#area-place").value];
     if (p) { $("#area-lat").value = p[0]; $("#area-lon").value = p[1]; loadArea(); }
   });
-  const onArea = debounce(loadArea, 500);
-  ["#area-lat", "#area-lon"].forEach((s) => $(s).addEventListener("input", () => { $("#area-place").value = "__custom"; onArea(); }));
+  // 위도·경도는 입력 중 자동 조회하지 않고 '지점 반영' 단추(또는 Enter)로 반영
+  ["#area-lat", "#area-lon"].forEach((s) => {
+    $(s).addEventListener("input", () => { $("#area-place").value = "__custom"; areaPending(true); });
+    $(s).addEventListener("keydown", (e) => { if (e.key === "Enter") applyArea(); });
+  });
+  $("#area-apply").addEventListener("click", applyArea);
   $("#area-radius").addEventListener("input", () => ($("#area-radius-v").textContent = $("#area-radius").value));
   $("#area-radius").addEventListener("change", loadArea);
   $("#area-run").addEventListener("click", runArea);

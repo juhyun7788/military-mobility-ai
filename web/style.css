@@ -140,3 +140,5 @@ footer { margin-top: 30px; color: var(--muted); font-size: .78rem; border-top: 1
 .isr-gallery img { width: 100%; height: 62px; object-fit: cover; display: block; }
 .isr-gallery figcaption { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .7rem; line-height: 1.2; padding: 3px 4px; color: var(--muted); }
 .isr-th { width: 44px; height: 30px; object-fit: cover; border-radius: 3px; vertical-align: middle; margin-right: 6px; }
+
+.area-apply-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0 4px; }

@@ -117,6 +117,10 @@
       <label>경도 <input type="number" id="area-lon" step="0.001" value="127.034"></label>
       <label>분석 반경 <b id="area-radius-v">3</b>km <input type="range" id="area-radius" min="0.5" max="5" step="0.5" value="3"></label>
     </div>
+    <div class="area-apply-row">
+      <button class="btn" id="area-apply">📍 지점 반영 (주변 CCTV 다시 찾기)</button>
+      <span class="hint" id="area-apply-hint">위도·경도를 고친 뒤 이 단추나 Enter를 누르세요.</span>
+    </div>
     <div id="area-error" class="error hidden"></div>
 
     <details id="area-isr-panel" class="panel" open>
