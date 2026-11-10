@@ -227,6 +227,12 @@ function readSettings() {
   $("#seconds-hint").textContent = S.seconds < 10 ? "⚠️ 10초 미만이면 돌발상황(8초 이상 정차)을 판단할 수 없습니다." : "";
   $("#live-warn").classList.toggle("hidden", S.demo);
   const b = $("#banner");
+  if (S.replay) {  // 녹화 시연 배너 유지
+    b.className = "cls-banner";
+    b.style.cssText = "background:#1f2a3d;color:#9ecbff;border-color:#4a90d9";
+    b.textContent = `녹화된 시연 · ${S.replayAt} 실제 분석 결과 재생 (분석 서버 없이 동작)`;
+    return;
+  }
   b.className = "cls-banner" + (S.demo ? " demo" : "");
   b.textContent = S.demo ? "시연 모드 · 실제 CCTV 일부 + 공개 샘플 영상 · 훈련·교육용" : "실시간 · 공개 도로 CCTV(국가교통정보센터) 기반 · 훈련·교육용";
 }
@@ -254,6 +260,7 @@ function routeReq(extra = {}) {
 const routeKey = () => JSON.stringify([startPt(), endPt(), S.buffer, S.maxc, S.demo, S.route.isr.map((i) => i.id)]);
 
 async function loadRoute() {
+  if (S.replay) return;  // 녹화 시연: 서버 호출 없음
   $("#route-error").classList.add("hidden");
   if ($("#start").value === $("#end").value) {
     $("#route-error").textContent = "출발점과 도착점이 같습니다."; $("#route-error").classList.remove("hidden"); return;
@@ -369,6 +376,7 @@ function renderRoute() {
   $("#route-targets").innerHTML = table(["위치(km)", "구분", "이름", "결과"], rows);
   $("#route-run").textContent = `▶ 분석 시작 (CCTV ${picks.length} · ISR ${isrs.length})`;
   $("#route-run").disabled = !(picks.length || isrs.length);
+  if (S.replay) { $("#route-run").disabled = true; $("#route-run").textContent = "녹화된 시연 (새 분석은 분석 서버 필요)"; }
   $("#route-save-demo").classList.toggle("hidden", S.demo || !picks.length);
 
   // 결과
@@ -386,6 +394,7 @@ function renderRoute() {
 }
 
 function runRoute() {
+  if (S.replay) return;
   const btn = $("#route-run"), key = routeKey();
   btn.disabled = true;
   api("/api/jobs/route", routeReq()).then(({ job_id }) => poll(job_id, $("#route-progress"), (res) => {
@@ -412,6 +421,7 @@ function areaIsrPos() {
 }
 
 async function loadArea() {
+  if (S.replay) return;
   $("#area-error").classList.add("hidden");
   const [lat, lon] = areaPt();
   try {
@@ -474,6 +484,7 @@ function renderArea(refit = false) {
     : `<tbody><tr><td class="hint">반경 안에 CCTV와 ISR 영상이 없습니다. 반경을 넓히거나 ISR 영상을 추가하세요.</td></tr></tbody>`;
   $("#area-run").textContent = `▶ 주변 융합 분석 (CCTV ${cctvs.length} · ISR ${isrs.length})`;
   $("#area-run").disabled = !rows.length;
+  if (S.replay) { $("#area-run").disabled = true; $("#area-run").textContent = "녹화된 시연 (새 분석은 분석 서버 필요)"; }
 
   $("#area-results").classList.toggle("hidden", !res);
   if (!res) return;
@@ -485,6 +496,7 @@ function renderArea(refit = false) {
 }
 
 function runArea() {
+  if (S.replay) return;
   const btn = $("#area-run"), key = areaKey();
   const [lat, lon] = areaPt();
   const place = $("#area-place").value === "__custom" ? "지정 지점" : $("#area-place").value;
@@ -595,18 +607,78 @@ function offlineMode(info) {
   document.querySelectorAll('nav[data-group="main"] .tab').forEach((b) => { if (b.dataset.tab !== "history") b.disabled = true; b.style.opacity = b.dataset.tab === "history" ? 1 : .4; });
   $("#sidebar").style.opacity = .5;
   $("#sidebar").style.pointerEvents = "none";
+  bindCommon();
+  showTab("main", "history");
+  // 녹화된 시연이 있으면 바로 볼 수 있게 버튼 제공
+  fetch("replay/replay.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((b) => {
+    if (!b) return;
+    document.querySelector("main > .warn").insertAdjacentHTML("beforeend",
+      `<div style="margin-top:10px"><button class="btn primary" id="replay-btn">▶ 녹화된 시연 보기 (${esc(b.recorded_at)} 실제 분석 결과)</button>
+       <span class="hint" style="margin-left:8px">서버 없이 기동로·지점 주변 분석 화면 전체를 그대로 볼 수 있습니다.</span></div>`);
+    $("#replay-btn").addEventListener("click", () => startReplay(b));
+  }).catch(() => { /* 녹화 시연 없음 */ });
+}
+
+// 탭·분석 기록 버튼 (한 번만 연결)
+function bindCommon() {
+  if (S.commonBound) return;
+  S.commonBound = true;
+  document.querySelectorAll("nav.tabs").forEach((nav) => nav.addEventListener("click", (e) => {
+    const b = e.target.closest(".tab"); if (b && !b.disabled) showTab(nav.dataset.group, b.dataset.tab);
+  }));
   $("#history-refresh").addEventListener("click", loadHistory);
   $("#history-list").addEventListener("click", (e) => {
     const a = e.target.closest("a[data-hid]"); if (!a) return;
     e.preventDefault(); showHistory(a.dataset.hid);
   });
-  document.querySelectorAll("nav.tabs").forEach((nav) => nav.addEventListener("click", (e) => {
-    const b = e.target.closest(".tab"); if (b && !b.disabled) showTab(nav.dataset.group, b.dataset.tab);
-  }));
-  showTab("main", "history");
+}
+
+// ------------------------------------------------------------------ 녹화된 시연 (서버 없이 실제 분석 결과 재생)
+function startReplay(b) {
+  S.replay = true;
+  S.replayAt = b.recorded_at;
+  API = "";  // 사진은 이 사이트의 replay/ 폴더에서 읽음
+  S.cfg = b.config;
+  document.querySelector("main > .warn")?.remove();
+  document.querySelectorAll('nav[data-group="main"] .tab').forEach((t) => { t.disabled = false; t.style.opacity = 1; });
+  $("#sidebar").style.opacity = 1; $("#sidebar").style.pointerEvents = "";
+  $("#banner").style.cssText = "background:#1f2a3d;color:#9ecbff;border-color:#4a90d9";
+  $("#banner").textContent = `녹화된 시연 · ${b.recorded_at} 실제 분석 결과 재생 (분석 서버 없이 동작)`;
+  document.querySelector("header.hdr").insertAdjacentHTML("afterend",
+    `<div class="warn" style="background:#1f2a3d;color:#c9e2ff;border-color:#4a90d9;font-size:.92rem">🎬 <b>녹화된 시연</b>입니다.
+     ${esc(b.recorded_at)}에 실제로 분석한 결과(공개 도로 CCTV·시연용 ISR 영상)를 그대로 보여줍니다. 지도·결과 탭·보고서를 눌러 보세요.
+     설정을 바꿔 새로 분석하려면 분석 서버(노트북)가 켜져 있어야 합니다.
+     <a href="./" style="color:#9ecbff;margin-left:6px">실시간 분석 화면으로 →</a></div>`);
+
+  setupUI();
+  // 기동로
+  $("#start").value = b.route.start; $("#end").value = b.route.end;
+  $("#buffer").value = b.route.buffer_km; $("#maxc").value = b.route.max_cctvs; $("#demo").checked = true;
+  readSettings();
+  S.route.isr = b.route.isr.map((x) => ({ ...x }));
+  S.route.data = b.route.info;
+  S.route.result = b.route.result; S.route.resultKey = routeKey();
+  $("#route-isr-panel").open = false;
+  renderRoute();
+  // 지점 주변
+  $("#area-place").value = b.area.place;
+  $("#area-lat").value = b.area.lat; $("#area-lon").value = b.area.lon;
+  $("#area-radius").value = b.area.radius; $("#area-radius-v").textContent = b.area.radius;
+  S.area.isr = b.area.isr.map((x) => ({ ...x }));
+  S.area.cctvs = b.area.cctvs;
+  S.area.result = b.area.result; S.area.resultKey = areaKey();
+  $("#area-isr-panel").open = false;
+  // 설정·입력은 잠금 (지도 바탕 선택·결과 탭은 그대로 사용)
+  document.querySelectorAll('#sidebar input, #sidebar button, #tab-route select, #tab-route input:not([name^="st-"]), #tab-area select, #tab-area input:not([name^="st-"]), #route-isr-add, #route-isr-clear, #area-isr-add, #area-isr-clear')
+    .forEach((e) => (e.disabled = true));
+  ["#route-run", "#area-run"].forEach((s) => { $(s).disabled = true; $(s).textContent = "녹화된 시연 (새 분석은 분석 서버 필요)"; });
+  showTab("main", "route");
 }
 
 async function init() {
+  if (new URLSearchParams(location.search).has("replay")) {  // ?replay 로 바로 녹화 시연 보기
+    try { return startReplay(await (await fetch("replay/replay.json", { cache: "no-store" })).json()); } catch (e) { /* 없으면 평소대로 */ }
+  }
   const conn = await resolveApi();
   if (!conn.ok) return offlineMode(conn);
   try {
@@ -614,6 +686,18 @@ async function init() {
   } catch (e) {
     return offlineMode({ why: "분석 서버에 연결하지 못했습니다 (" + e.message + ")" });
   }
+  setupUI();
+  // 서버가 켜져 있어도 녹화 시연을 볼 수 있게 링크 제공
+  fetch("replay/replay.json", { method: "HEAD", cache: "no-store" }).then((r) => {
+    if (r.ok) document.querySelector(".hdr-sub").insertAdjacentHTML("beforeend",
+      ` <a href="?replay" style="color:#9ecbff;white-space:nowrap">🎬 녹화된 시연 보기</a>`);
+  }).catch(() => {});
+  await loadRoute();
+  await loadArea();
+}
+
+// 화면 준비 (선택 목록·지도·버튼 연결). 실시간·녹화 시연 공용
+function setupUI() {
   const c = S.cfg;
   applyAccess();
   $("#admin-logout").addEventListener("click", (e) => { e.preventDefault(); adminLogout(); });
@@ -635,14 +719,13 @@ async function init() {
   styleRadios(document.querySelector('.map-styles[data-map="route"]'), RM);
   styleRadios(document.querySelector('.map-styles[data-map="area"]'), AM);
   AM.map.on("click", (e) => {
+    if (S.replay) return;
     $("#area-lat").value = e.latlng.lat.toFixed(5); $("#area-lon").value = e.latlng.lng.toFixed(5);
     $("#area-place").value = "__custom"; loadArea();
   });
 
-  // 탭
-  document.querySelectorAll("nav.tabs").forEach((nav) => nav.addEventListener("click", (e) => {
-    const b = e.target.closest(".tab"); if (b) showTab(nav.dataset.group, b.dataset.tab);
-  }));
+  // 탭·분석 기록
+  bindCommon();
 
   // 설정 변경
   const onSettings = debounce(() => { readSettings(); loadRoute(); loadArea(); }, 300);
@@ -670,6 +753,7 @@ async function init() {
   $("#route-run").addEventListener("click", runRoute);
   $("#route-isr-km").addEventListener("input", () => ($("#route-isr-km-v").textContent = $("#route-isr-km").value));
   $("#route-isr-table").addEventListener("click", (e) => {
+    if (S.replay) return;
     const id = e.target.dataset && e.target.dataset.del; if (!id) return;
     S.route.isr = S.route.isr.filter((i) => i.id !== id); renderRoute();
   });
@@ -699,6 +783,7 @@ async function init() {
   $("#area-radius").addEventListener("change", loadArea);
   $("#area-run").addEventListener("click", runArea);
   $("#area-isr-table").addEventListener("click", (e) => {
+    if (S.replay) return;
     const id = e.target.dataset && e.target.dataset.del; if (!id) return;
     S.area.isr = S.area.isr.filter((i) => i.id !== id); renderArea();
   });
@@ -715,15 +800,6 @@ async function init() {
     } catch (e) { alert("추가 실패: " + e.message); }
   });
 
-  // 분석 기록
-  $("#history-refresh").addEventListener("click", loadHistory);
-  $("#history-list").addEventListener("click", (e) => {
-    const a = e.target.closest("a[data-hid]"); if (!a) return;
-    e.preventDefault(); showHistory(a.dataset.hid);
-  });
-
-  await loadRoute();
-  await loadArea();
 }
 
 init();
