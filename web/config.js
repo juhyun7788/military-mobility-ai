@@ -4,5 +4,5 @@
 //     2) 아니면(Vercel) Supabase server_status 표에서 노트북 서버의 현재 공개 주소를 읽음
 // - SUPABASE_ANON_KEY는 공개용 키입니다 (읽기 전용 정책). service_role 키는 절대 넣지 마세요.
 window.API_BASE = "";
-window.SUPABASE_URL = "";
-window.SUPABASE_ANON_KEY = "";
+window.SUPABASE_URL = "https://pmeyqgcgctvnchmvmony.supabase.co";
+window.SUPABASE_ANON_KEY = "sb_publishable_7M04uvdy7-9M_Pug-ImstA_CneIFh6l";
