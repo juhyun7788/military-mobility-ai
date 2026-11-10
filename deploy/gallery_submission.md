@@ -1,7 +1,7 @@
 # SKKU 바이브코딩 해커톤 갤러리 등록 문안 (2026 보수교육 3기)
 
 등록 페이지: https://skku-vibecoding-gallery.vercel.app/g/2026-3/submit
-썸네일: `deploy/thumbnail.png` (1280×800)
+썸네일: `deploy/thumbnail.png` (1280×800, 2026-11-10 밝은 색상으로 다시 만듦: `deploy/make_thumbnail.py`)
 
 2026-11-10 등록 완료 (제작자: AI 비전). 사이트 제한: 한 줄 소개 80자, 사용한 도구·기술 200자 이내 → 아래는 실제 제출한 내용
 
