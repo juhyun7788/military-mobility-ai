@@ -248,12 +248,35 @@ function renderSidebar(usage) {
 
 // ================================================================== 기동로 분석
 let RM;
-const startPt = () => S.cfg.places[$("#start").value];
-const endPt = () => S.cfg.places[$("#end").value];
+// 출발·도착점: 목록의 지명 또는 직접 입력한 좌표 (위도·경도 칸이 기준)
+const CUSTOM_PT = "__custom";
+const ptOf = (k) => [+$(`#${k}-lat`).value, +$(`#${k}-lon`).value];
+const startPt = () => ptOf("start");
+const endPt = () => ptOf("end");
+const ptName = (k) => $(`#${k}`).value === CUSTOM_PT ? `지정 지점(${ptOf(k).map((v) => v.toFixed(3)).join(", ")})` : $(`#${k}`).value;
+// 목록에서 지명을 고르면 좌표 칸을 채움
+function setRoutePlace(k, name) {
+  const p = S.cfg.places[name];
+  $(`#${k}`).value = p ? name : CUSTOM_PT;
+  if (p) { $(`#${k}-lat`).value = p[0]; $(`#${k}-lon`).value = p[1]; }
+}
+// 입력한 출발·도착점이 아직 반영되지 않았음을 단추에 표시
+function routePending(on) {
+  $("#route-apply").classList.toggle("primary", on);
+  $("#route-apply-hint").textContent = on ? "⚠️ 입력한 출발·도착점이 아직 반영되지 않았습니다. 단추나 Enter를 누르세요."
+    : "목록에서 고르거나 위도·경도를 직접 입력한 뒤 이 단추나 Enter를 누르세요.";
+}
+async function applyRoute() {
+  if (S.replay) return;
+  const bad = ["start", "end"].find((k) => { const [la, lo] = ptOf(k); return !(la >= 33 && la <= 39 && lo >= 124 && lo <= 132); });
+  if (bad) return alert(`${bad === "start" ? "출발점" : "도착점"} 좌표를 위도 33~39, 경도 124~132 범위(대한민국)로 입력하세요.`);
+  const b = $("#route-apply"); b.disabled = true; b.textContent = "⏳ 경로·CCTV 찾는 중…";
+  try { await loadRoute(); } finally { b.disabled = false; b.textContent = "🧭 기동로 반영 (경로·CCTV 다시 찾기)"; }
+}
 
 function routeReq(extra = {}) {
   return Object.assign({
-    start: startPt(), end: endPt(), start_name: $("#start").value, end_name: $("#end").value,
+    start: startPt(), end: endPt(), start_name: ptName("start"), end_name: ptName("end"),
     buffer_km: S.buffer, max_cctvs: S.maxc, seconds: S.seconds, demo: S.demo, isr: S.route.isr,
   }, extra);
 }
@@ -262,7 +285,8 @@ const routeKey = () => JSON.stringify([startPt(), endPt(), S.buffer, S.maxc, S.d
 async function loadRoute() {
   if (S.replay) return;  // 녹화 시연: 서버 호출 없음
   $("#route-error").classList.add("hidden");
-  if ($("#start").value === $("#end").value) {
+  routePending(false);
+  if (JSON.stringify(startPt()) === JSON.stringify(endPt())) {
     $("#route-error").textContent = "출발점과 도착점이 같습니다."; $("#route-error").classList.remove("hidden"); return;
   }
   try {
@@ -339,7 +363,7 @@ function renderRoute() {
   const isrMk = isrs.map((i) => { const t = thrRes[i.id]; return `<div class="isr" style="left:${pct(i.km)}%">${t && t.level >= 2 ? "⚠️" : "🛰️"}</div>`; }).join("");
   $("#route-strip").innerHTML = `<div class="strip-wrap"><div class="strip-title">기동로 구간별 기동 가능성 (출발 → 도착 · 📹 CCTV · 🛰️/⚠️ ISR 위협 지점)</div>
     <div class="strip">${parts}${cams}${isrMk}</div>
-    <div class="strip-axis"><span>▶ ${esc($("#start").value)} 0km</span><span>${Math.round(total * .25)}km</span><span>${Math.round(total * .5)}km</span><span>${Math.round(total * .75)}km</span><span>${esc($("#end").value)} ${Math.round(total)}km ⚑</span></div>
+    <div class="strip-axis"><span>▶ ${esc(ptName("start"))} 0km</span><span>${Math.round(total * .25)}km</span><span>${Math.round(total * .5)}km</span><span>${Math.round(total * .75)}km</span><span>${esc(ptName("end"))} ${Math.round(total)}km ⚑</span></div>
     <div class="legend">${Object.values(MOB).map(([n, c]) => `<span><i style="background:${c}"></i>${n}</span>`).join("")}</div></div>`;
 
   // 지도
@@ -361,8 +385,8 @@ function renderRoute() {
       .bindTooltip(`🛰️ ${i.name} (${r1(i.km)}km)${t ? ` · 위협 ${t.level_name}: ${t.summary}` : " · 분석 전"}`).addTo(ov);
     if (t && t.level >= 3) L.circle(p, { radius: 2000, color: "#c62828", fillOpacity: .12 }).bindTooltip("위협 지점 반경 2km").addTo(ov);
   });
-  L.marker(d.route.coords[0], { icon: pin("#111", "▶") }).bindTooltip("출발: " + $("#start").value).addTo(ov);
-  L.marker(d.route.coords[d.route.coords.length - 1], { icon: pin("#111", "⚑") }).bindTooltip("도착: " + $("#end").value).addTo(ov);
+  L.marker(d.route.coords[0], { icon: pin("#111", "▶") }).bindTooltip("출발: " + ptName("start")).addTo(ov);
+  L.marker(d.route.coords[d.route.coords.length - 1], { icon: pin("#111", "⚑") }).bindTooltip("도착: " + ptName("end")).addTo(ov);
   const fitKey = JSON.stringify([startPt(), endPt(), !!(res && res.detour)]);
   if (S.route.fitKey !== fitKey) {
     RM.map.fitBounds(L.latLngBounds(d.route.coords.concat(res && res.detour ? res.detour.coords : [])), { padding: [20, 20] });
@@ -667,7 +691,7 @@ function startReplay(b) {
 
   setupUI();
   // 기동로
-  $("#start").value = b.route.start; $("#end").value = b.route.end;
+  setRoutePlace("start", b.route.start); setRoutePlace("end", b.route.end);
   $("#buffer").value = b.route.buffer_km; $("#maxc").value = b.route.max_cctvs; $("#demo").checked = true;
   readSettings();
   S.route.isr = b.route.isr.map((x) => ({ ...x }));
@@ -684,7 +708,7 @@ function startReplay(b) {
   S.area.result = b.area.result; S.area.resultKey = areaKey();
   $("#area-isr-panel").open = false;
   // 설정·입력은 잠금 (지도 바탕 선택·결과 탭은 그대로 사용)
-  document.querySelectorAll('#sidebar input, #sidebar button, #tab-route select, #tab-route input:not([name^="st-"]), #tab-area select, #tab-area input:not([name^="st-"]), #route-isr-add, #route-isr-clear, #area-isr-add, #area-isr-clear, #area-apply')
+  document.querySelectorAll('#sidebar input, #sidebar button, #tab-route select, #tab-route input:not([name^="st-"]), #tab-area select, #tab-area input:not([name^="st-"]), #route-isr-add, #route-isr-clear, #area-isr-add, #area-isr-clear, #area-apply, #route-apply')
     .forEach((e) => (e.disabled = true));
   ["#route-run", "#area-run"].forEach((s) => { $(s).disabled = true; $(s).textContent = "녹화된 시연 (새 분석은 분석 서버 필요)"; });
   showTab("main", "route");
@@ -741,8 +765,10 @@ function setupUI() {
 
   const names = Object.keys(c.places);
   const opts = names.map((n) => `<option>${esc(n)}</option>`).join("");
-  $("#start").innerHTML = opts; $("#end").innerHTML = opts;
-  $("#end").value = names.includes("천안") ? "천안" : names[1];
+  const ptOpts = opts + `<option value="${CUSTOM_PT}">직접 지정 (위도·경도)</option>`;
+  $("#start").innerHTML = ptOpts; $("#end").innerHTML = ptOpts;
+  setRoutePlace("start", names[0]);
+  setRoutePlace("end", names.includes("천안") ? "천안" : names[1]);
   $("#area-place").innerHTML = `<option value="__custom">직접 지정 (지도 클릭·좌표)</option>` + opts;
   const extra = `<option value="">선택 안 함</option>` + c.demo_isr.extra.map((e, i) => `<option value="${i}">${esc(e.name)}</option>`).join("");
   $("#route-isr-extra").innerHTML = extra; $("#area-isr-extra").innerHTML = extra;
@@ -784,8 +810,18 @@ function setupUI() {
   });
 
   // 기동로
-  $("#start").addEventListener("change", loadRoute);
-  $("#end").addEventListener("change", loadRoute);
+  // 출발·도착점: 목록 선택은 바로 반영, 좌표 입력은 '기동로 반영' 단추(또는 Enter)로 반영
+  ["start", "end"].forEach((k) => {
+    $(`#${k}`).addEventListener("change", () => {
+      if ($(`#${k}`).value === CUSTOM_PT) { $(`#${k}-lat`).focus(); return routePending(true); }
+      setRoutePlace(k, $(`#${k}`).value); loadRoute();
+    });
+    [`#${k}-lat`, `#${k}-lon`].forEach((s) => {
+      $(s).addEventListener("input", () => { $(`#${k}`).value = CUSTOM_PT; routePending(true); });
+      $(s).addEventListener("keydown", (e) => { if (e.key === "Enter") applyRoute(); });
+    });
+  });
+  $("#route-apply").addEventListener("click", applyRoute);
   $("#route-run").addEventListener("click", runRoute);
   $("#route-isr-km").addEventListener("input", () => ($("#route-isr-km-v").textContent = $("#route-isr-km").value));
   $("#route-isr-table").addEventListener("click", (e) => {

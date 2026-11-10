@@ -52,8 +52,18 @@
   <!-- ====================================================== 기동로 분석 -->
   <section id="tab-route" class="tab-body">
     <div class="row2">
-      <label>출발점 <select id="start"></select></label>
-      <label>도착점 <select id="end"></select></label>
+      <div class="pt-box">
+        <label>출발점 <select id="start"></select></label>
+        <div class="pt-ll"><label>위도 <input type="number" id="start-lat" step="0.001"></label><label>경도 <input type="number" id="start-lon" step="0.001"></label></div>
+      </div>
+      <div class="pt-box">
+        <label>도착점 <select id="end"></select></label>
+        <div class="pt-ll"><label>위도 <input type="number" id="end-lat" step="0.001"></label><label>경도 <input type="number" id="end-lon" step="0.001"></label></div>
+      </div>
+    </div>
+    <div class="area-apply-row">
+      <button class="btn" id="route-apply">🧭 기동로 반영 (경로·CCTV 다시 찾기)</button>
+      <span class="hint" id="route-apply-hint">목록에서 고르거나 위도·경도를 직접 입력한 뒤 이 단추나 Enter를 누르세요.</span>
     </div>
     <div id="route-error" class="error hidden"></div>
 

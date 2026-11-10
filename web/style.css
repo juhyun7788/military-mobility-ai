@@ -142,3 +142,7 @@ footer { margin-top: 30px; color: var(--muted); font-size: .78rem; border-top: 1
 .isr-th { width: 44px; height: 30px; object-fit: cover; border-radius: 3px; vertical-align: middle; margin-right: 6px; }
 
 .area-apply-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0 4px; }
+
+.pt-box { display: grid; gap: 6px; }
+.pt-ll { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pt-ll label { font-size: .82rem; color: var(--muted); }
