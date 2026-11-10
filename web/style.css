@@ -131,3 +131,12 @@ footer { margin-top: 30px; color: var(--muted); font-size: .78rem; border-top: 1
   .hdr-title { font-size: 1.7rem; }
   .row-map, .isr-row, .row4 { grid-template-columns: 1fr; }
 }
+
+/* 시연용 ISR 사진 갤러리 */
+.isr-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); grid-auto-rows: 92px; gap: 6px; max-height: 300px; overflow-y: auto; flex-shrink: 0; margin: 4px 0 8px; padding: 2px; }
+.isr-gallery figure { margin: 0; cursor: pointer; border: 2px solid transparent; border-radius: 6px; background: #121c29; overflow: hidden; }
+.isr-gallery figure:hover { border-color: #4a6a8f; }
+.isr-gallery figure.sel { border-color: #f5b301; }
+.isr-gallery img { width: 100%; height: 62px; object-fit: cover; display: block; }
+.isr-gallery figcaption { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .7rem; line-height: 1.2; padding: 3px 4px; color: var(--muted); }
+.isr-th { width: 44px; height: 30px; object-fit: cover; border-radius: 3px; vertical-align: middle; margin-right: 6px; }

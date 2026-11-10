@@ -2,6 +2,12 @@
   "_설명": "시연 모드용 ISR·UAV 영상. 공개 훈련·호송 사진을 기동로 위 비율 위치에 가상으로 배치합니다 (실제 촬영 위치 아님). 출처는 data/isr/SOURCES.md",
   "items": [
     {
+      "id": "ISR-0",
+      "name": "[시연용 ISR] 도로 장애물 (콘크리트 블록)",
+      "ratio": 0.15,
+      "source": "data/isr/concrete_block.jpg"
+    },
+    {
       "id": "ISR-1",
       "name": "[시연용 ISR] 호송 차량 행렬",
       "ratio": 0.33,
@@ -12,6 +18,12 @@
       "name": "[시연용 ISR] 기갑 차량 (UAV 수직 촬영)",
       "ratio": 0.62,
       "source": "data/isr/tank_above.jpg"
+    },
+    {
+      "id": "ISR-3",
+      "name": "[시연용 ISR] 궤도 차량 + 연막",
+      "ratio": 0.85,
+      "source": "data/isr/tracked_smoke_forest.jpg"
     }
   ],
   "near": [
@@ -28,9 +40,31 @@
       "bearing": 250,
       "dist_km": 2.6,
       "source": "data/isr/supply_convoy.jpg"
+    },
+    {
+      "id": "NISR-3",
+      "name": "[시연용 ISR] 차륜형 장갑차",
+      "bearing": 150,
+      "dist_km": 1.2,
+      "source": "data/isr/btr_apc.jpg"
+    },
+    {
+      "id": "NISR-4",
+      "name": "[시연용 ISR] 도로 위 차량 화재·연기",
+      "bearing": 320,
+      "dist_km": 2.2,
+      "source": "data/isr/car_fire_road.jpg"
     }
   ],
   "extra": [
+    {
+      "name": "[시연용 ISR] 호송 차량 행렬",
+      "source": "data/isr/supply_convoy.jpg"
+    },
+    {
+      "name": "[시연용 ISR] 기갑 차량 (UAV 수직 촬영)",
+      "source": "data/isr/tank_above.jpg"
+    },
     {
       "name": "[시연용 ISR] 장갑차 호송",
       "source": "data/isr/armoured_convoy.jpg"

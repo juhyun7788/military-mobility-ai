@@ -306,7 +306,7 @@ function renderRoute() {
   const isrs = routeIsrPos();
   $("#route-isr-count").textContent = isrs.length;
   $("#route-isr-table").innerHTML = isrs.length
-    ? table(["위치(km)", "ISR 영상", "형식", ""], isrs.map((i) => [r1(i.km), i.name, IMAGE_EXT.test(i.source) ? "사진" : "동영상",
+    ? table(["위치(km)", "ISR 영상", "형식", ""], isrs.map((i) => [r1(i.km), { html: isrThumb(i.source) + esc(i.name) }, IMAGE_EXT.test(i.source) ? "사진" : "동영상",
         { html: "✕", cls: "x", attr: ` data-del="${esc(i.id)}" title="삭제"` }]))
     : `<tbody><tr><td class="hint">ISR·UAV 영상이 없습니다. 오른쪽에서 사진·영상을 올리고 기동로 위 위치를 지정하세요.</td></tr></tbody>`;
   if (!d) return;
@@ -445,7 +445,7 @@ function renderArea(refit = false) {
 
   $("#area-isr-count").textContent = isrs.length;
   $("#area-isr-table").innerHTML = isrs.length
-    ? table(["방위(°)", "거리(km)", "ISR 영상", ""], isrs.map((i) => [String(Math.round(i.brg)).padStart(3, "0"), r1(i.dist), i.name,
+    ? table(["방위(°)", "거리(km)", "ISR 영상", ""], isrs.map((i) => [String(Math.round(i.brg)).padStart(3, "0"), r1(i.dist), { html: isrThumb(i.source) + esc(i.name) },
         { html: "✕", cls: "x", attr: ` data-del="${esc(i.id)}" title="삭제"` }]))
     : `<tbody><tr><td class="hint">반경 안에 ISR·UAV 영상이 없습니다. 오른쪽에서 올리고 방위·거리를 지정하세요.</td></tr></tbody>`;
 
@@ -697,6 +697,26 @@ async function init() {
 }
 
 // 화면 준비 (선택 목록·지도·버튼 연결). 실시간·녹화 시연 공용
+// ISR 사진 썸네일 (web/isr/ 에 축소본이 있는 시연용 사진만)
+function isrThumb(src) {
+  return /^isr\/[\w.-]+\.(jpe?g|png|webp)$/i.test(src || "") ? `<img class="isr-th" src="${esc(src)}" alt="" loading="lazy">` : "";
+}
+
+// 시연용 ISR 사진 갤러리: 사진을 눌러 고르면 아래 '추가' 버튼으로 넣음
+function isrGallery(k, list) {
+  const sel = $(`#${k}-isr-extra`);
+  sel.closest("label").insertAdjacentHTML("afterend", `<div class="isr-gallery" id="${k}-isr-gallery">` +
+    list.map((e, i) => `<figure data-i="${i}" title="${esc(e.name)}">${isrThumb(e.source)}<figcaption>${esc(e.name.replace(/^\[시연용 ISR\]\s*/, ""))}</figcaption></figure>`).join("") + `</div>`);
+  const gal = $(`#${k}-isr-gallery`);
+  const mark = () => gal.querySelectorAll("figure").forEach((f) => f.classList.toggle("sel", f.dataset.i === sel.value));
+  gal.addEventListener("click", (e) => {
+    const f = e.target.closest("figure"); if (!f || S.replay) return;
+    sel.value = sel.value === f.dataset.i ? "" : f.dataset.i; mark();
+  });
+  sel.addEventListener("change", mark);
+  S.isrMark = S.isrMark || {}; S.isrMark[k] = mark;
+}
+
 function setupUI() {
   const c = S.cfg;
   applyAccess();
@@ -711,6 +731,7 @@ function setupUI() {
   $("#area-place").innerHTML = `<option value="__custom">직접 지정 (지도 클릭·좌표)</option>` + opts;
   const extra = `<option value="">선택 안 함</option>` + c.demo_isr.extra.map((e, i) => `<option value="${i}">${esc(e.name)}</option>`).join("");
   $("#route-isr-extra").innerHTML = extra; $("#area-isr-extra").innerHTML = extra;
+  ["route", "area"].forEach((k) => isrGallery(k, c.demo_isr.extra));
 
   S.route.isr = c.demo_isr.items.map((x) => ({ ...x }));
   S.area.isr = (c.demo_isr.near || []).map((x) => ({ ...x }));
