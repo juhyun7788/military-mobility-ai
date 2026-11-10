@@ -1,16 +1,87 @@
 {
   "_설명": "시연 모드용 ISR·UAV 영상. 공개 훈련·호송 사진을 기동로 위 비율 위치에 가상으로 배치합니다 (실제 촬영 위치 아님). 출처는 data/isr/SOURCES.md",
   "items": [
-    {"id": "ISR-1", "name": "[시연용 ISR] 호송 차량 행렬", "ratio": 0.33, "source": "data/isr/supply_convoy.jpg"},
-    {"id": "ISR-2", "name": "[시연용 ISR] 기갑 차량 (UAV 수직 촬영)", "ratio": 0.62, "source": "data/isr/tank_above.jpg"}
+    {
+      "id": "ISR-1",
+      "name": "[시연용 ISR] 호송 차량 행렬",
+      "ratio": 0.33,
+      "source": "data/isr/supply_convoy.jpg"
+    },
+    {
+      "id": "ISR-2",
+      "name": "[시연용 ISR] 기갑 차량 (UAV 수직 촬영)",
+      "ratio": 0.62,
+      "source": "data/isr/tank_above.jpg"
+    }
   ],
   "near": [
-    {"id": "NISR-1", "name": "[시연용 ISR] 기갑 차량 (UAV 수직 촬영)", "bearing": 60, "dist_km": 1.8, "source": "data/isr/tank_above.jpg"},
-    {"id": "NISR-2", "name": "[시연용 ISR] 호송 차량 행렬", "bearing": 250, "dist_km": 2.6, "source": "data/isr/supply_convoy.jpg"}
+    {
+      "id": "NISR-1",
+      "name": "[시연용 ISR] 기갑 차량 (UAV 수직 촬영)",
+      "bearing": 60,
+      "dist_km": 1.8,
+      "source": "data/isr/tank_above.jpg"
+    },
+    {
+      "id": "NISR-2",
+      "name": "[시연용 ISR] 호송 차량 행렬",
+      "bearing": 250,
+      "dist_km": 2.6,
+      "source": "data/isr/supply_convoy.jpg"
+    }
   ],
   "extra": [
-    {"name": "[시연용 ISR] 장갑차 호송", "source": "data/isr/armoured_convoy.jpg"},
-    {"name": "[시연용 ISR] 기갑 종대", "source": "data/isr/m551_column.jpg"},
-    {"name": "[시연용 ISR] 전차 기동", "source": "data/isr/k2_tank.jpg"}
+    {
+      "name": "[시연용 ISR] 장갑차 호송",
+      "source": "data/isr/armoured_convoy.jpg"
+    },
+    {
+      "name": "[시연용 ISR] 기갑 종대",
+      "source": "data/isr/m551_column.jpg"
+    },
+    {
+      "name": "[시연용 ISR] 전차 기동",
+      "source": "data/isr/k2_tank.jpg"
+    },
+    {
+      "name": "[시연용 ISR] 자주포 (화력 차량)",
+      "source": "data/isr/k9_howitzer.jpg"
+    },
+    {
+      "name": "[시연용 ISR] 차륜형 장갑차",
+      "source": "data/isr/btr_apc.jpg"
+    },
+    {
+      "name": "[시연용 ISR] 궤도 차량 + 연막",
+      "source": "data/isr/tracked_smoke_forest.jpg"
+    },
+    {
+      "name": "[시연용 ISR] 전술차량 + 연막·먼지",
+      "source": "data/isr/mrap_smoke.jpg"
+    },
+    {
+      "name": "[시연용 ISR] 군용 트럭 행렬",
+      "source": "data/isr/truck_convoy.jpg"
+    },
+    {
+      "name": "[시연용 ISR] 교량 위 장갑차 (교량 통과)",
+      "source": "data/isr/bridge_lav.jpg"
+    },
+    {
+      "name": "[시연용 ISR] 부교 위 보병전투차",
+      "source": "data/isr/ifv_floating_bridge.jpg"
+    },
+    {
+      "name": "[시연용 ISR] 도로 위 차량 화재·연기",
+      "source": "data/isr/car_fire_road.jpg"
+    },
+    {
+      "name": "[시연용 ISR] 도로 장애물 (콘크리트 블록)",
+      "source": "data/isr/concrete_block.jpg"
+    },
+    {
+      "name": "[시연용 ISR] 도로 차단 시설 (바리케이드)",
+      "source": "data/isr/roadblock_street.jpg"
+    }
   ]
 }
