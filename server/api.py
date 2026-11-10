@@ -32,7 +32,7 @@ sys.path.insert(0, str(PROJ))
 
 from server import history  # noqa: E402
 from src.analyzer import analyze_video  # noqa: E402
-from src.cctv_source import LocalCatalogSource, api_usage, get_source  # noqa: E402
+from src.cctv_source import LocalCatalogSource, api_usage, api_usage_today, get_source  # noqa: E402
 from src.report import (  # noqa: E402
     LEVELS, MOBILITY, IsrInput, area_assessment, build_segments, make_area_report, make_report, overall, traffic_level,
 )
@@ -58,6 +58,8 @@ import os  # noqa: E402
 PUBLIC_DEMO = os.getenv("PUBLIC_DEMO", "0") == "1"
 LIVE_LOCKED = PUBLIC_DEMO and os.getenv("ALLOW_LIVE", "0") != "1"
 MAX_UPLOAD_MB = 30 if PUBLIC_DEMO else 200
+# 공개 사이트에서 실시간 모드가 하루에 쓸 수 있는 ITS API 호출 수 (월 5,000건 한도 보호)
+LIVE_DAILY_LIMIT = int(os.getenv("LIVE_DAILY_LIMIT", "300"))
 KEEP_HOURS = 24
 
 app = FastAPI(title="지능형 기동지원 군사상황 정보판단 API")
@@ -203,7 +205,9 @@ def check_mode(demo: bool, request: Request | None = None) -> None:
     if demo:
         return
     if live_locked(request):
-        raise HTTPException(403, "공개 사이트에서는 실시간 모드(ITS API)가 잠겨 있습니다. 관리자 로그인 후 이용하세요.")
+        raise HTTPException(403, "공개 사이트에서 실시간 모드(ITS API)를 쓰려면 비밀번호가 필요합니다.")
+    if is_public(request) and api_usage_today() >= LIVE_DAILY_LIMIT:
+        raise HTTPException(429, f"오늘 공개 사이트 실시간 호출 한도({LIVE_DAILY_LIMIT}건)를 다 썼습니다. 내일 다시 이용하거나 시연 모드를 쓰세요.")
     if not HAS_KEY:
         raise HTTPException(400, "ITS 인증키가 없어 실시간 모드를 쓸 수 없습니다")
 
@@ -296,6 +300,7 @@ def config(request: Request):
         "has_key": HAS_KEY, "demo_default": True, "api_usage": api_usage(), "api_limit": API_LIMIT,
         "live_locked": live_locked(request), "public_demo": is_public(request), "max_upload_mb": 30 if is_public(request) else 200,
         "admin": is_admin(request), "admin_available": bool(_admin_pass()) and is_public(request),
+        "live_daily_limit": LIVE_DAILY_LIMIT if is_public(request) else None, "api_today": api_usage_today(),
         "history_enabled": history.ENABLED,
         "places": PLACES, "demo_isr": demo_isr_json(),
         "saved_real": [{"name": s["name"], "saved_at": s.get("saved_at", "?")} for s in saved],

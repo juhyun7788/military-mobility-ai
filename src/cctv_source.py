@@ -32,13 +32,19 @@ def api_usage(month: str | None = None) -> int:
         return 0
 
 
+def api_usage_today() -> int:
+    """오늘 ITS API 실제 호출 수."""
+    return api_usage(time.strftime("%Y-%m-%d"))
+
+
 def _count_api_call() -> None:
-    month = time.strftime("%Y-%m")
+    month, day = time.strftime("%Y-%m"), time.strftime("%Y-%m-%d")
     try:
         data = json.loads(USAGE_FILE.read_text(encoding="utf-8"))
     except Exception:
         data = {}
     data[month] = int(data.get(month, 0)) + 1
+    data[day] = int(data.get(day, 0)) + 1
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     USAGE_FILE.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
 

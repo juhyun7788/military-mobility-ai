@@ -548,28 +548,32 @@ async function refreshUsage() {
 }
 
 // ================================================================== 시작
-// ------------------------------------------------------------------ 관리자 (공개 사이트에서 실시간 모드 열기)
+// ------------------------------------------------------------------ 실시간 모드 비밀번호 (공개 사이트)
 function applyAccess() {
   const c = S.cfg;
-  $("#demo").disabled = !c.has_key || c.live_locked;
+  // 공개 사이트라도 비밀번호로 열 수 있으면 스위치는 켜 둠 (끌 때 비밀번호를 물음)
+  $("#demo").disabled = !c.has_key || (c.live_locked && !c.admin_available);
+  const daily = c.live_daily_limit ? ` 실시간 호출은 하루 ${c.live_daily_limit}건까지(오늘 ${c.api_today ?? 0}건).` : "";
   $("#demo-hint").textContent = c.live_locked
-    ? "공개 사이트: 실시간 모드(ITS API)는 잠겨 있습니다. 저장된 실제 CCTV와 공개 샘플 영상으로 시연합니다."
-    : "켜짐: ITS API를 부르지 않고 저장된 실제 CCTV + 공개 샘플 영상 + 시연용 ISR로 동작합니다. 끄면 실시간 모드(ITS API 호출, 월 5,000건 한도).";
-  $("#admin-box").classList.toggle("hidden", !(c.admin_available || c.admin));
-  $("#admin-login").classList.toggle("hidden", !!c.admin);
+    ? (c.admin_available
+      ? "공개 사이트: 스위치를 끄면 비밀번호를 확인한 뒤 실시간 모드(ITS API)로 바뀝니다." + daily
+      : "공개 사이트: 실시간 모드(ITS API)는 잠겨 있습니다. 저장된 실제 CCTV와 공개 샘플 영상으로 시연합니다.")
+    : "켜짐: ITS API를 부르지 않고 저장된 실제 CCTV + 공개 샘플 영상 + 시연용 ISR로 동작합니다. 끄면 실시간 모드(ITS API 호출, 월 5,000건 한도)." + (c.public_demo ? daily : "");
+  $("#admin-box").classList.toggle("hidden", !c.admin);
   $("#admin-on").classList.toggle("hidden", !c.admin);
 }
 
-async function adminLogin() {
-  const pass = prompt("관리자 비밀번호를 입력하세요 (노트북 .env의 ADMIN_PASSCODE)");
-  if (!pass) return;
+async function unlockLive() {
+  // 비밀번호 확인 → 이 탭에 기억 → 서버 설정 다시 읽기. 성공하면 true
+  const pass = prompt("실시간 모드 비밀번호를 입력하세요");
+  if (!pass) return false;
   try {
     await api("/api/admin/login", { passcode: pass });
     try { sessionStorage.setItem("adminPass", pass.trim()); } catch (e) { /* 저장 불가 브라우저 */ }
     S.cfg = await api("/api/config");
     applyAccess(); renderSidebar();
-    alert("관리자 모드가 켜졌습니다. 왼쪽 '시연 모드' 스위치를 끄면 실시간 모드(ITS API)를 쓸 수 있습니다.");
-  } catch (e) { alert("로그인 실패: " + e.message); }
+    return !S.cfg.live_locked;
+  } catch (e) { alert("비밀번호 확인 실패: " + e.message); return false; }
 }
 
 async function adminLogout() {
@@ -612,7 +616,6 @@ async function init() {
   }
   const c = S.cfg;
   applyAccess();
-  $("#admin-login").addEventListener("click", adminLogin);
   $("#admin-logout").addEventListener("click", (e) => { e.preventDefault(); adminLogout(); });
   renderSidebar();
   readSettings();
@@ -645,8 +648,12 @@ async function init() {
   const onSettings = debounce(() => { readSettings(); loadRoute(); loadArea(); }, 300);
   ["#seconds", "#maxc", "#buffer"].forEach((s) => $(s).addEventListener("input", () => { readSettings(); }));
   ["#maxc", "#buffer"].forEach((s) => $(s).addEventListener("change", onSettings));
-  $("#demo").addEventListener("change", () => {
-    if (!$("#demo").checked && !confirm("실시간 모드로 바꾸면 ITS API를 호출합니다 (월 5,000건 한도). 계속할까요?")) { $("#demo").checked = true; return; }
+  $("#demo").addEventListener("change", async () => {
+    if (!$("#demo").checked) {
+      // 공개 사이트에서는 실시간 모드로 바꿀 때 비밀번호 확인
+      if (S.cfg.live_locked && !(await unlockLive())) { $("#demo").checked = true; return; }
+      if (!confirm("실시간 모드로 바꾸면 국가교통정보센터 ITS API를 호출합니다 (월 5,000건 한도). 계속할까요?")) { $("#demo").checked = true; return; }
+    }
     readSettings(); loadRoute(); loadArea();
   });
   $("#check-saved").addEventListener("click", async () => {
