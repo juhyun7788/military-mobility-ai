@@ -165,7 +165,7 @@ html[data-theme="a"] {
   --info-bg: #26385a; --info-fg: #bcdcff; --info-text: #e0eeff; --info-line: #6aa9f0; --base-size: 16px;
 }
 /* B. 주간 라이트: 흰 배경 + 진한 글자 (밝은 실내·빔프로젝터용) */
-html[data-theme="b"] {
+html[data-theme="b"], html[data-theme="b1"], html[data-theme="b2"], html[data-theme="b3"] {
   --bg: #eef2f6; --panel: #ffffff; --line: #cfd8e3; --text: #17212e; --muted: #5a6b80; --accent: #2e7d32;
   --input: #ffffff; --tbl: #ffffff; --th: #e8eef5; --btn: #e6ecf3; --soft: #34465c; --link: #1558c0; --strong: #0d1724;
   --hdr-bg: linear-gradient(90deg, #e3f1e5 0%, #ffffff 70%); --hdr-line: #9ccaa2; --title-shadow: none;
@@ -173,7 +173,7 @@ html[data-theme="b"] {
   --warn-bg: #fff4d6; --warn-fg: #7a5200; --err-bg: #fde7e7; --err-fg: #a61b1b; --ok-bg: #e3f4e5; --ok-fg: #1b5e20;
   --info-bg: #e3eefc; --info-fg: #1558c0; --info-text: #1d3557; --info-line: #6aa0e0; --base-size: 16px;
 }
-html[data-theme="b"] .btn.primary { color: #fff; }
+html[data-theme^="b"] .btn.primary { color: #fff; }
 /* C. 야간 고대비: 검정 바탕 + 흰 글자 + 선명한 강조색 (어두운 상황실·멀리서 보기) */
 html[data-theme="c"] {
   --bg: #05080c; --panel: #11161d; --line: #4a5868; --text: #ffffff; --muted: #d0d9e4; --accent: #69f06f;
@@ -194,3 +194,46 @@ html[data-theme="d"] {
   --info-bg: #e4e8dc; --info-fg: #3b5a12; --info-text: #2c3320; --info-line: #8b9a5b; --base-size: 16px;
 }
 html[data-theme="d"] .btn.primary { color: #fff; }
+
+/* ---------- B 변형: 단추·탭·단계 상자에 색 넣기 ---------- */
+html[data-theme^="b"] .btn:disabled { opacity: .7; cursor: not-allowed; }
+html[data-theme^="b"] .btn { font-weight: 600; box-shadow: 0 1px 2px rgba(20, 40, 70, .12); }
+
+/* B1. 파랑 단추: 일반 단추 파랑, 분석 시작은 초록, 보조(비우기)는 테두리만 */
+html[data-theme="b1"] .btn { background: #1e6fd0; border-color: #1a5fb4; color: #fff; }
+html[data-theme="b1"] .btn:hover { background: #1858a8; border-color: #1858a8; }
+html[data-theme="b1"] .btn.primary { background: #2e7d32; border-color: #2e7d32; }
+html[data-theme="b1"] .btn.ghost { background: #fff; color: #1e6fd0; border-color: #1e6fd0; }
+html[data-theme="b1"] #route-apply.primary, html[data-theme="b1"] #area-apply.primary { background: #ef6c00; border-color: #ef6c00; }
+html[data-theme="b1"] nav[data-group="main"] .tab.active { background: #1e6fd0; color: #fff; border-radius: 8px 8px 0 0; border-bottom-color: #1e6fd0; }
+html[data-theme="b1"] .tabs.small .tab.active { color: #1e6fd0; border-bottom-color: #1e6fd0; }
+html[data-theme="b1"] .step.done { background: #e3f4e5; color: #1b5e20; }
+html[data-theme="b1"] .step.active { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+
+/* B2. 초록 연한 단추: 군 초록 계열로 통일, 연한 바탕 + 진한 글자 */
+html[data-theme="b2"] .btn { background: #e3f1e5; border-color: #7cb581; color: #1b5e20; }
+html[data-theme="b2"] .btn:hover { background: #cfe8d2; border-color: #2e7d32; }
+html[data-theme="b2"] .btn.primary { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+html[data-theme="b2"] .btn.ghost { background: #fff; color: #5a6b80; border-color: #cfd8e3; }
+html[data-theme="b2"] #route-apply.primary, html[data-theme="b2"] #area-apply.primary { background: #f9a825; border-color: #f9a825; color: #3d2a00; }
+html[data-theme="b2"] nav[data-group="main"] .tab { background: #f3f6f9; border-radius: 8px 8px 0 0; margin-right: 2px; }
+html[data-theme="b2"] nav[data-group="main"] .tab.active { background: #2e7d32; color: #fff; border-bottom-color: #2e7d32; }
+html[data-theme="b2"] .step.done { background: #e3f4e5; }
+html[data-theme="b2"] .step.active { background: #c8e6c9; color: #0d3d12; }
+
+/* B3. 역할별 색: 반영=파랑, 추가=보라, 분석 시작=초록, 저장·내려받기=청록, 비우기=빨강 테두리 */
+html[data-theme="b3"] .btn { background: #455a75; border-color: #455a75; color: #fff; }
+html[data-theme="b3"] .btn:hover { filter: brightness(1.1); }
+html[data-theme="b3"] #route-apply, html[data-theme="b3"] #area-apply { background: #1e6fd0; border-color: #1e6fd0; }
+html[data-theme="b3"] #route-apply.primary, html[data-theme="b3"] #area-apply.primary { background: #ef6c00; border-color: #ef6c00; }
+html[data-theme="b3"] #route-isr-add, html[data-theme="b3"] #area-isr-add { background: #6a4bc4; border-color: #6a4bc4; }
+html[data-theme="b3"] .btn.primary { background: #2e7d32; border-color: #2e7d32; }
+html[data-theme="b3"] #route-save-demo, html[data-theme="b3"] [id$="-dl"], html[data-theme="b3"] [id$="-cp"], html[data-theme="b3"] #check-saved { background: #00838f; border-color: #00838f; }
+html[data-theme="b3"] .btn.ghost { background: #fff; color: #c62828; border-color: #e57373; }
+html[data-theme="b3"] nav[data-group="main"] .tab { border: 1px solid #cfd8e3; border-bottom: 0; border-radius: 8px 8px 0 0; background: #f7f9fb; margin-right: 3px; }
+html[data-theme="b3"] nav[data-group="main"] .tab[data-tab="route"].active { background: #1e6fd0; color: #fff; }
+html[data-theme="b3"] nav[data-group="main"] .tab[data-tab="area"].active { background: #6a4bc4; color: #fff; }
+html[data-theme="b3"] nav[data-group="main"] .tab[data-tab="history"].active { background: #00838f; color: #fff; }
+html[data-theme="b3"] .tabs.small .tab.active { color: #1e6fd0; border-bottom-color: #1e6fd0; }
+html[data-theme="b3"] .step.done { background: #e3f4e5; color: #1b5e20; }
+html[data-theme="b3"] .step.active { background: #2e7d32; border-color: #2e7d32; color: #fff; }

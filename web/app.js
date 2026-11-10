@@ -714,10 +714,10 @@ function startReplay(b) {
   showTab("main", "route");
 }
 
-// 색상 시안: 주소에 ?theme=a~d 를 붙여 미리 보기
+// 색상 시안: 주소에 ?theme=a~d, b1~b3 를 붙여 미리 보기
 (function applyTheme() {
   const t = new URLSearchParams(location.search).get("theme");
-  if (t && /^[a-z]$/.test(t)) document.documentElement.dataset.theme = t;
+  if (t && /^[a-z][0-9]?$/.test(t)) document.documentElement.dataset.theme = t;
 })();
 
 async function init() {
