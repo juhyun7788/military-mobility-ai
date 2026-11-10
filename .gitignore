@@ -1,0 +1,20 @@
+# 비밀 정보 — 절대 올리지 않음
+.env
+
+# 파이썬 가상환경·캐시
+.venv/
+__pycache__/
+*.pyc
+
+# HF Spaces용으로 만들어지는 폴더 (deploy/make_hf_space.py로 다시 만들 수 있음)
+deploy/hf_space/
+
+# 실행 중 생기는 파일
+data/cache/
+data/results/
+data/uploads/
+
+# 위협 모델을 다시 만들 때만 쓰는 큰 파일 (GitHub 100MB 제한) — 필요하면 따로 내려받기
+# 실행에 필요한 models/yolo11n.pt(5MB), models/threat_yoloe.pt(30MB)는 올림
+models/mobileclip2_b.ts
+models/yoloe-26s-seg.pt

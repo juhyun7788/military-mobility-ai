@@ -1,0 +1,20 @@
+opencv-python
+ultralytics
+lap
+torch
+torchvision
+pillow
+numpy
+pandas
+requests
+python-dotenv
+# 웹 서버
+fastapi
+uvicorn
+python-multipart
+# 위협 모델을 다시 만들 때만 필요 (build_threat_model.py): Ultralytics 공식 CLIP
+# pip install https://github.com/ultralytics/CLIP/archive/refs/heads/main.zip
+# 예전 Streamlit 화면 (app.py)
+streamlit
+folium
+streamlit-folium

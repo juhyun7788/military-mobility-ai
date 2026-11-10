@@ -1,0 +1,37 @@
+{
+  "_설명": "데모용 가상 CCTV 목록입니다. 좌표는 위치 기반 조회를 시연하려고 서울 서초 일대에 임의로 붙인 값이며, 실제 CCTV 위치나 실제 촬영 장소가 아닙니다. 영상 출처와 라이선스는 data/videos/SOURCES.md를 보세요.",
+  "cctvs": [
+    {
+      "id": "DEMO-001",
+      "name": "샘플 CCTV 1 - 고속도로 원경",
+      "lat": 37.4842,
+      "lon": 127.0347,
+      "source": "data/videos/freeway.ogv",
+      "start_seconds": 0
+    },
+    {
+      "id": "DEMO-002",
+      "name": "샘플 CCTV 2 - 고속도로 정체",
+      "lat": 37.4905,
+      "lon": 127.0420,
+      "source": "data/videos/congestion.webm",
+      "start_seconds": 0
+    },
+    {
+      "id": "DEMO-003",
+      "name": "샘플 CCTV 3 - 도심 보행자",
+      "lat": 37.4788,
+      "lon": 127.0265,
+      "source": "data/videos/street.webm",
+      "start_seconds": 11
+    },
+    {
+      "id": "DEMO-004",
+      "name": "샘플 CCTV 4 - 실내 통로",
+      "lat": 37.4960,
+      "lon": 127.0280,
+      "source": "data/videos/people-detection.mp4",
+      "start_seconds": 0
+    }
+  ]
+}

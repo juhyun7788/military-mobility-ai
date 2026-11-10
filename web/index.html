@@ -1,0 +1,183 @@
+﻿<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>지능형 기동지원 군사상황 정보판단 프로그램</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside id="sidebar">
+  <h2>⚙️ 설정</h2>
+  <label class="switch-row">
+    <input type="checkbox" id="demo" checked>
+    <span>시연 모드 (API 호출 없음)</span>
+  </label>
+  <p class="hint" id="demo-hint">ITS API를 부르지 않고 저장된 실제 CCTV + 공개 샘플 영상 + 시연용 ISR로 동작합니다.</p>
+  <div id="live-warn" class="warn hidden">실시간 모드: 경로·지점을 바꿀 때마다 ITS API를 호출합니다 (월 5,000건 한도). 같은 조회는 하루 동안 저장본을 씁니다.</div>
+
+  <label>CCTV당 분석 시간 <b id="seconds-v">10</b>초
+    <input type="range" id="seconds" min="4" max="20" step="1" value="10"></label>
+  <p class="hint" id="seconds-hint"></p>
+  <label>기동로 분석 CCTV 수 (최대) <b id="maxc-v">6</b>개
+    <input type="range" id="maxc" min="2" max="15" step="1" value="6"></label>
+  <label>기동로 CCTV 검색 폭 <b id="buffer-v">0.3</b>km
+    <input type="range" id="buffer" min="0.1" max="1" step="0.1" value="0.3"></label>
+  <hr>
+  <p class="hint" id="api-usage">📊 ITS API 호출: -</p>
+  <p class="hint" id="saved-info">💾 시연용 실제 CCTV: -</p>
+  <button id="check-saved" class="btn small">저장된 실제 CCTV 재생 확인 (API 호출 없음)</button>
+  <div id="check-out" class="hint"></div>
+  <hr>
+  <p class="hint">위협 탐지: YOLOE (글로 대상 지정, 학습 없음)<br>경로: OSRM (OpenStreetMap 도로망)</p>
+</aside>
+
+<main>
+  <div id="banner" class="cls-banner demo">시연 모드 · 실제 CCTV 일부 + 공개 샘플 영상 · 훈련·교육용</div>
+  <header class="hdr">
+    <div class="hdr-title">지능형 기동지원 군사상황 정보판단 프로그램</div>
+    <div class="hdr-sub">기동로 위 공개 도로 CCTV와 ISR·UAV 영상을 AI로 분석해 구간별 기동 가능성(Go / Slow-Go / No-Go)과 우회로·조치 건의를 만듭니다.</div>
+  </header>
+
+  <nav class="tabs" data-group="main">
+    <button class="tab active" data-tab="route">🛣️ 기동로 분석</button>
+    <button class="tab" data-tab="area">📍 지점 주변 분석</button>
+    <button class="tab" data-tab="history">🗂️ 분석 기록</button>
+  </nav>
+
+  <!-- ====================================================== 기동로 분석 -->
+  <section id="tab-route" class="tab-body">
+    <div class="row2">
+      <label>출발점 <select id="start"></select></label>
+      <label>도착점 <select id="end"></select></label>
+    </div>
+    <div id="route-error" class="error hidden"></div>
+
+    <details id="route-isr-panel" class="panel" open>
+      <summary>🛰️ ISR·UAV 영상 — 기동로 위협 분석 (<span id="route-isr-count">0</span>건)</summary>
+      <div class="row-panel">
+        <div class="grow">
+          <table class="tbl" id="route-isr-table"></table>
+          <button class="btn small ghost" id="route-isr-clear">ISR 목록 비우기</button>
+          <p class="hint">실제 UAV 영상에는 촬영 위치 정보(MISB KLV)가 들어 있어 자동 배치가 가능합니다. 이번 버전은 위치를 직접 지정합니다.</p>
+        </div>
+        <div class="side-form">
+          <label>UAV·ISR 사진/영상 올리기 <input type="file" id="route-isr-file" accept=".jpg,.jpeg,.png,.webp,.mp4,.webm,.avi,.mov,.ogv"></label>
+          <label>또는 시연용 ISR 사진 <select id="route-isr-extra"></select></label>
+          <label>기동로 위 위치 <b id="route-isr-km-v">0</b>km <input type="range" id="route-isr-km" min="0" max="100" step="0.5" value="0"></label>
+          <button class="btn" id="route-isr-add">➕ 기동로에 추가</button>
+        </div>
+      </div>
+    </details>
+
+    <div class="steps" id="route-steps"></div>
+    <div class="kpis" id="route-kpis"></div>
+    <div id="route-verdict"></div>
+    <div id="route-detour"></div>
+    <div id="route-strip"></div>
+
+    <div class="row-map">
+      <div class="map-col">
+        <div class="map-styles" data-map="route"></div>
+        <div id="route-map" class="map"></div>
+      </div>
+      <div class="side-col">
+        <h4>분석 대상</h4>
+        <table class="tbl" id="route-targets"></table>
+        <button class="btn primary wide" id="route-run">▶ 분석 시작</button>
+        <button class="btn wide hidden" id="route-save-demo">💾 이 경로의 실제 CCTV를 시연용으로 저장</button>
+        <div class="progress hidden" id="route-progress"><div class="bar"></div><span class="msg"></span></div>
+      </div>
+    </div>
+
+    <div id="route-results" class="hidden">
+      <nav class="tabs small" data-group="route-res">
+        <button class="tab active" data-tab="r-isr">🛰️ ISR 위협</button>
+        <button class="tab" data-tab="r-cam">📷 CCTV 화면</button>
+        <button class="tab" data-tab="r-seg">📋 구간별 기동 판단</button>
+        <button class="tab" data-tab="r-rep">📝 상황 보고</button>
+      </nav>
+      <div id="tab-r-isr" class="tab-body"></div>
+      <div id="tab-r-cam" class="tab-body hidden"></div>
+      <div id="tab-r-seg" class="tab-body hidden"></div>
+      <div id="tab-r-rep" class="tab-body hidden"></div>
+    </div>
+  </section>
+
+  <!-- ====================================================== 지점 주변 분석 -->
+  <section id="tab-area" class="tab-body hidden">
+    <p class="hint">기준 지점 주변의 공개 도로 CCTV(교통)와 ISR·UAV 영상(위협)을 함께 분석해 지역 기동 가능성을 판단합니다. 지도를 클릭해도 기준 지점이 바뀝니다.</p>
+    <div class="row4">
+      <label>기준 지점 <select id="area-place"></select></label>
+      <label>위도 <input type="number" id="area-lat" step="0.001" value="37.487"></label>
+      <label>경도 <input type="number" id="area-lon" step="0.001" value="127.034"></label>
+      <label>분석 반경 <b id="area-radius-v">3</b>km <input type="range" id="area-radius" min="0.5" max="5" step="0.5" value="3"></label>
+    </div>
+    <div id="area-error" class="error hidden"></div>
+
+    <details id="area-isr-panel" class="panel" open>
+      <summary>🛰️ 주변 ISR·UAV 영상 (<span id="area-isr-count">0</span>건 / 반경 안)</summary>
+      <div class="row-panel">
+        <div class="grow">
+          <table class="tbl" id="area-isr-table"></table>
+          <button class="btn small ghost" id="area-isr-clear">ISR 목록 비우기</button>
+        </div>
+        <div class="side-form">
+          <label>UAV·ISR 사진/영상 올리기 <input type="file" id="area-isr-file" accept=".jpg,.jpeg,.png,.webp,.mp4,.webm,.avi,.mov,.ogv"></label>
+          <label>또는 시연용 ISR 사진 <select id="area-isr-extra"></select></label>
+          <div class="row2">
+            <label>방위 (°, 북=0) <input type="number" id="area-isr-brg" min="0" max="359" step="5" value="90"></label>
+            <label>거리 (km) <input type="number" id="area-isr-dist" min="0.1" max="5" step="0.1" value="1"></label>
+          </div>
+          <button class="btn" id="area-isr-add">➕ 지점 주변에 추가</button>
+        </div>
+      </div>
+    </details>
+
+    <div class="kpis" id="area-kpis"></div>
+    <div id="area-verdict"></div>
+
+    <div class="row-map">
+      <div class="map-col">
+        <div class="map-styles" data-map="area"></div>
+        <div id="area-map" class="map"></div>
+        <p class="hint">점선: 기준 지점 → 위협 지점</p>
+      </div>
+      <div class="side-col">
+        <h4>분석 대상</h4>
+        <table class="tbl" id="area-targets"></table>
+        <button class="btn primary wide" id="area-run">▶ 주변 융합 분석</button>
+        <div class="progress hidden" id="area-progress"><div class="bar"></div><span class="msg"></span></div>
+      </div>
+    </div>
+
+    <div id="area-results" class="hidden">
+      <nav class="tabs small" data-group="area-res">
+        <button class="tab active" data-tab="a-isr">🛰️ ISR 위협</button>
+        <button class="tab" data-tab="a-cam">📷 CCTV 화면</button>
+        <button class="tab" data-tab="a-rep">📝 지점 상황 보고</button>
+      </nav>
+      <div id="tab-a-isr" class="tab-body"></div>
+      <div id="tab-a-cam" class="tab-body hidden"></div>
+      <div id="tab-a-rep" class="tab-body hidden"></div>
+    </div>
+  </section>
+
+  <!-- ====================================================== 분석 기록 -->
+  <section id="tab-history" class="tab-body hidden">
+    <p class="hint">분석이 끝날 때마다 종합 판단과 보고서가 Supabase에 저장됩니다. 항목을 누르면 보고서를 봅니다.</p>
+    <button class="btn small" id="history-refresh">↻ 새로고침</button>
+    <div id="history-list" style="margin-top:10px"></div>
+    <div id="history-detail" style="margin-top:14px"></div>
+  </section>
+
+  <footer>개인정보 보호: 얼굴·번호판 인식을 하지 않으며, 화면의 사람 영역은 모자이크 처리합니다. 공개 도로 CCTV만 사용하고 특정 인물·차량을 추적하지 않습니다.
+    AI 분석은 판단 보조용이며 최종 판단은 지휘관이 합니다. 영상 출처: 국가교통정보센터(its.go.kr) CCTV 화상자료 Open API / 시연용 자료 출처는 data/*/SOURCES.md</footer>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

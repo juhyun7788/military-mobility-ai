@@ -1,0 +1,10 @@
+ultralytics
+opencv-python-headless
+lap
+pillow
+numpy
+requests
+python-dotenv
+fastapi
+uvicorn
+python-multipart

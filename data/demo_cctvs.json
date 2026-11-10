@@ -1,0 +1,122 @@
+{
+  "_설명": "시연 모드용 CCTV. 'real'은 2026-11-09 ITS API로 받은 실제 경부선 CCTV(좌표·영상 주소 실제)이고, 영상 주소는 만료될 수 있습니다. 'samples'는 공개 샘플 영상으로, 기동로 위 비율 위치에 가상으로 배치합니다.",
+  "real": [
+    {
+      "id": "ITS-경부선-서초",
+      "name": "[경부선] 서초",
+      "lat": 37.4831,
+      "lon": 127.026,
+      "source": "https://cctvsec.ktict.co.kr/99/gxghkq8m26JVKuO1BPcdhB6dEs05e5Ymdldf6pXodxWukjOMzcVl7E8wbySjrP6msg7qCW+bKgr8p3UjJstSJtITK/D54U+SNoVmLYFAJKY=",
+      "saved_at": "2026-11-09 13:00 (추정)"
+    },
+    {
+      "id": "ITS-경부선-양재",
+      "name": "[경부선] 양재",
+      "lat": 37.4616,
+      "lon": 127.042,
+      "source": "https://cctvsec.ktict.co.kr/100/VChTtYHXarmgB4dMt+cI3nb9XAlkj7xfgym2ahnUzSizXiu+atzHNtqsudrOJadzA9Yem8iWNF7W/viAaRTTtpldPkGGitgetii9nbinEz8=",
+      "saved_at": "2026-11-09 13:00 (추정)"
+    },
+    {
+      "id": "ITS-경부선-원지동",
+      "name": "[경부선] 원지동",
+      "lat": 37.4401,
+      "lon": 127.061,
+      "source": "https://cctvsec.ktict.co.kr/2430/ELzy8lNZqwXYK8Eh5+tKUuFMIB2x+voHtQCiUtf7No442uOKsY16KxqH67vPaXmXrZq5RwSwUCQbhc0ravVORpV0nZL1cZO2OckJWAp6wrI=",
+      "saved_at": "2026-11-09 13:00 (추정)"
+    },
+    {
+      "id": "[경부선] 서초@37.4831,127.026",
+      "name": "[경부선] 서초",
+      "lat": 37.4831,
+      "lon": 127.026,
+      "source": "https://cctvsec.ktict.co.kr/99/gxghkq8m26JVKuO1BPcdhB6dEs05e5Ymdldf6pXodxWukjOMzcVl7E8wbySjrP6mKasejsLRB18HRB3vXrqP6NITK/D54U+SNoVmLYFAJKY=",
+      "saved_at": "2026-11-10 09:53"
+    },
+    {
+      "id": "[경부선] 양재@37.4616,127.042",
+      "name": "[경부선] 양재",
+      "lat": 37.4616,
+      "lon": 127.042,
+      "source": "https://cctvsec.ktict.co.kr/100/VChTtYHXarmgB4dMt+cI3nb9XAlkj7xfgym2ahnUzSizXiu+atzHNtqsudrOJadzJP+lsAdEdHuIUuGsfDudK03WJCb5SqPwtyMmc6cfsXs=",
+      "saved_at": "2026-11-10 09:53"
+    },
+    {
+      "id": "[경부선] 원지동@37.4401,127.061",
+      "name": "[경부선] 원지동",
+      "lat": 37.4401,
+      "lon": 127.061,
+      "source": "https://cctvsec.ktict.co.kr/2430/ELzy8lNZqwXYK8Eh5+tKUuFMIB2x+voHtQCiUtf7No442uOKsY16KxqH67vPaXmXgVWAM3nNGCQto8S4jwQyeParJcxX7E1wT3AUjqOHa0E=",
+      "saved_at": "2026-11-10 09:53"
+    },
+    {
+      "id": "[경부선] 상적교@37.4391,127.061",
+      "name": "[경부선] 상적교",
+      "lat": 37.4391,
+      "lon": 127.061,
+      "source": "https://cctvsec.ktict.co.kr/95/1UF9nRil7zklH2AYTF2eC+I080uAarlcOBLIx/jbv7dABI7SDyvIG7KZbLgT/+KJ/UDu4RNO6WWcMgHLYUEN2+O+hV9vLBbl50g9FbqQwqw=",
+      "saved_at": "2026-11-10 09:53"
+    },
+    {
+      "id": "[경부선] 달래내2@37.4304,127.069",
+      "name": "[경부선] 달래내2",
+      "lat": 37.4304,
+      "lon": 127.069,
+      "source": "https://cctvsec.ktict.co.kr/501/p+/y3/JRFW6i/B2uuhIUBGM/XHTTnpVsxfQJyNReP9+yFAp89L/3KmkUIxFBeZjCfH3KSubGFe2B3MTOUdwqDQdSTMip6IzzNSZOdZlfhgY=",
+      "saved_at": "2026-11-10 09:53"
+    },
+    {
+      "id": "[경부선] 판교분기점@37.4065,127.094",
+      "name": "[경부선] 판교분기점",
+      "lat": 37.4065,
+      "lon": 127.094,
+      "source": "https://cctvsec.ktict.co.kr/96/YKP2w+1iADVFPBhskRG09z6Oxp+qCxMfxI2J6qDMqjFlJcNJHou4iBvsh1I3qSfNESoL2tA6o3sLjHk+oBt2s0FgOCLqa4FveZBk3pF+Yac=",
+      "saved_at": "2026-11-10 09:53"
+    }
+  ],
+  "near_samples": [
+    {
+      "id": "NEAR-정체",
+      "name": "[시연용 샘플] 도로 정체 영상",
+      "bearing": 200,
+      "dist_km": 1.6,
+      "source": "data/videos/congestion.webm"
+    }
+  ],
+  "near_samples_fallback": [
+    {
+      "id": "NEAR-원경",
+      "name": "[시연용 샘플] 고속도로 원경 영상",
+      "bearing": 40,
+      "dist_km": 2.2,
+      "source": "data/videos/freeway.ogv"
+    },
+    {
+      "id": "NEAR-도로",
+      "name": "[시연용 샘플] 도로 차량 영상",
+      "bearing": 320,
+      "dist_km": 1.2,
+      "source": "data/videos/person-bicycle-car-detection.mp4"
+    }
+  ],
+  "samples": [
+    {
+      "id": "SAMPLE-정체",
+      "name": "[시연용 샘플] 고속도로 정체 영상",
+      "ratio": 0.45,
+      "source": "data/videos/congestion.webm"
+    },
+    {
+      "id": "SAMPLE-원경",
+      "name": "[시연용 샘플] 고속도로 원경 영상",
+      "ratio": 0.7,
+      "source": "data/videos/freeway.ogv"
+    },
+    {
+      "id": "SAMPLE-도로",
+      "name": "[시연용 샘플] 도로 차량 영상",
+      "ratio": 0.92,
+      "source": "data/videos/person-bicycle-car-detection.mp4"
+    }
+  ]
+}
