@@ -22,7 +22,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -145,10 +145,25 @@ def threat_json(t, img=None) -> dict:
     return {"level": t.level, "level_name": t.level_name, "summary": t.summary(), "items": t.items, "image": img}
 
 
-def check_mode(demo: bool) -> None:
+def is_public(request: Request | None) -> bool:
+    """공개 주소(터널 등)로 들어온 요청인지. 노트북에서 localhost로 접속한 것만 '내부'로 봄."""
+    if PUBLIC_DEMO:
+        return True
+    if request is None:
+        return False
+    host = request.headers.get("host", "").split(":")[0].lower()
+    forwarded = request.headers.get("cf-connecting-ip") or request.headers.get("x-forwarded-for")
+    return bool(forwarded) or host not in ("localhost", "127.0.0.1", "::1")
+
+
+def live_locked(request: Request | None) -> bool:
+    return is_public(request) and os.getenv("ALLOW_LIVE", "0") != "1"
+
+
+def check_mode(demo: bool, request: Request | None = None) -> None:
     if demo:
         return
-    if LIVE_LOCKED:
+    if live_locked(request):
         raise HTTPException(403, "공개 시연 서버에서는 실시간 모드(ITS API)가 잠겨 있습니다. 시연 모드로 이용하세요.")
     if not HAS_KEY:
         raise HTTPException(400, "ITS 인증키가 없어 실시간 모드를 쓸 수 없습니다")
@@ -236,11 +251,11 @@ def demo_isr_json() -> dict:
 
 # ------------------------------------------------------------------ API
 @app.get("/api/config")
-def config():
+def config(request: Request):
     saved = json.loads((DATA / "demo_cctvs.json").read_text(encoding="utf-8"))["real"]
     return {
         "has_key": HAS_KEY, "demo_default": True, "api_usage": api_usage(), "api_limit": API_LIMIT,
-        "live_locked": LIVE_LOCKED, "public_demo": PUBLIC_DEMO, "max_upload_mb": MAX_UPLOAD_MB,
+        "live_locked": live_locked(request), "public_demo": is_public(request), "max_upload_mb": 30 if is_public(request) else 200,
         "history_enabled": history.ENABLED,
         "places": PLACES, "demo_isr": demo_isr_json(),
         "saved_real": [{"name": s["name"], "saved_at": s.get("saved_at", "?")} for s in saved],
@@ -249,8 +264,8 @@ def config():
 
 
 @app.post("/api/route")
-def route_info(req: RouteReq):
-    check_mode(req.demo)
+def route_info(req: RouteReq, request: Request):
+    check_mode(req.demo, request)
     route = route_for(req.start, req.end)
     error = None
     try:
@@ -267,8 +282,8 @@ def route_info(req: RouteReq):
 
 
 @app.post("/api/nearby")
-def nearby(req: AreaReq):
-    check_mode(req.demo)
+def nearby(req: AreaReq, request: Request):
+    check_mode(req.demo, request)
     error = None
     try:
         items = near_cctvs(req.lat, req.lon, req.radius, req.demo)
@@ -279,14 +294,15 @@ def nearby(req: AreaReq):
 
 
 @app.post("/api/upload")
-async def upload(file: UploadFile = File(...)):
+async def upload(request: Request, file: UploadFile = File(...)):
+    max_mb = 30 if is_public(request) else 200
     ext = Path(file.filename or "").suffix.lower()
     if ext not in ISR_EXT:
         raise HTTPException(400, f"지원하지 않는 형식입니다: {ext}")
     name = f"{uuid.uuid4().hex[:8]}{ext}"
     data = await file.read()
-    if len(data) > MAX_UPLOAD_MB * 1024 * 1024:
-        raise HTTPException(400, f"파일이 너무 큽니다 (최대 {MAX_UPLOAD_MB}MB)")
+    if len(data) > max_mb * 1024 * 1024:
+        raise HTTPException(400, f"파일이 너무 큽니다 (최대 {max_mb}MB)")
     (UPLOADS / name).write_bytes(data)
     return {"source": f"uploads/{name}", "name": f"[업로드] {file.filename}", "id": name.split('.')[0]}
 
@@ -362,8 +378,8 @@ def run_route_job(jid: str, req: RouteReq, progress):
 
 
 @app.post("/api/jobs/route")
-def job_route(req: RouteReq):
-    check_mode(req.demo)
+def job_route(req: RouteReq, request: Request):
+    check_mode(req.demo, request)
     return {"job_id": start_job(run_route_job, req)}
 
 
@@ -422,8 +438,8 @@ def run_area_job(jid: str, req: AreaReq, progress):
 
 
 @app.post("/api/jobs/area")
-def job_area(req: AreaReq):
-    check_mode(req.demo)
+def job_area(req: AreaReq, request: Request):
+    check_mode(req.demo, request)
     return {"job_id": start_job(run_area_job, req)}
 
 
@@ -456,7 +472,9 @@ def job_status(jid: str):
 
 
 @app.post("/api/save_demo")
-def save_demo(req: RouteReq):
+def save_demo(req: RouteReq, request: Request):
+    if is_public(request):
+        raise HTTPException(403, "시연 목록 저장은 노트북(localhost)에서만 할 수 있습니다")
     """실시간 모드에서 받은 경로 CCTV를 시연 목록에 저장 (이미 받은 목록 사용, 추가 API 호출 없음)."""
     if req.demo:
         raise HTTPException(400, "실시간 모드에서만 저장할 수 있습니다")

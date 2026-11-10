@@ -1,6 +1,7 @@
--- 지능형 기동지원 군사상황 정보판단 프로그램: 분석 기록 표
--- Supabase 대시보드 → SQL Editor에 붙여넣고 Run
+-- 지능형 기동지원 군사상황 정보판단 프로그램: Supabase 표
+-- Supabase 대시보드 → SQL Editor에 붙여넣고 Run (여러 번 실행해도 안전)
 
+-- 1) 분석 기록 -------------------------------------------------------------
 create table if not exists public.analyses (
   id            bigint generated always as identity primary key,
   created_at    timestamptz not null default now(),
@@ -13,9 +14,25 @@ create table if not exists public.analyses (
   report        text,                   -- 상황 보고 전문
   summary       jsonb                   -- 구간·위협 요약
 );
-
--- 행 단위 보안 켜기: 공개(anon) 키로는 읽기·쓰기 불가.
--- 분석 서버만 service_role 키로 읽고 씀 (service_role은 RLS를 우회).
-alter table public.analyses enable row level security;
-
 create index if not exists analyses_created_at_idx on public.analyses (created_at desc);
+
+-- 2) 분석 서버(노트북) 상태: 현재 공개 주소와 마지막 신호 시각 --------------
+create table if not exists public.server_status (
+  id          int primary key default 1,
+  api_base    text,
+  online      boolean default false,
+  updated_at  timestamptz not null default now(),
+  constraint single_row check (id = 1)
+);
+insert into public.server_status (id, online) values (1, false) on conflict (id) do nothing;
+
+-- 3) 보안 (RLS) ------------------------------------------------------------
+-- 웹페이지(공개 anon 키)는 '읽기'만 가능, 쓰기는 노트북 분석 서버(service_role 키)만.
+alter table public.analyses enable row level security;
+alter table public.server_status enable row level security;
+
+drop policy if exists "공개 읽기" on public.analyses;
+create policy "공개 읽기" on public.analyses for select to anon using (true);
+
+drop policy if exists "공개 읽기" on public.server_status;
+create policy "공개 읽기" on public.server_status for select to anon using (true);

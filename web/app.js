@@ -1,7 +1,41 @@
 /* 지능형 기동지원 군사상황 정보판단 프로그램 — 웹 화면 */
 "use strict";
 
-const API = (window.API_BASE || "").replace(/\/$/, "");
+let API = (window.API_BASE || "").replace(/\/$/, "");  // resolveApi()가 정함
+
+// ------------------------------------------------------------------ Supabase (공개 읽기 전용)
+const SB = () => (window.SUPABASE_URL && window.SUPABASE_ANON_KEY)
+  ? { url: window.SUPABASE_URL.replace(/\/$/, ""), key: window.SUPABASE_ANON_KEY } : null;
+async function sbGet(path) {
+  const s = SB();
+  const headers = { apikey: s.key };
+  if (!s.key.startsWith("sb_")) headers.Authorization = `Bearer ${s.key}`;  // 예전 JWT 형식 키
+  const r = await fetch(`${s.url}/rest/v1/${path}`, { headers });
+  if (!r.ok) throw new Error(`Supabase ${r.status}`);
+  return r.json();
+}
+
+// 분석 서버(노트북) 찾기: 같은 주소 → Supabase에 적힌 공개 주소 순서
+async function resolveApi() {
+  if (API) return { ok: true, how: "고정 주소" };
+  try {
+    const r = await fetch("/api/config", { cache: "no-store" });
+    if (r.ok && (r.headers.get("content-type") || "").includes("json")) return { ok: true, how: "같은 주소" };
+  } catch (e) { /* 정적 호스팅(Vercel)이면 여기로 */ }
+  if (!SB()) return { ok: false, why: "분석 서버 주소를 찾을 수 없습니다 (Supabase 설정 없음)" };
+  try {
+    const [s] = await sbGet("server_status?id=eq.1&select=*");
+    const fresh = s && s.updated_at && Date.now() - Date.parse(s.updated_at) < 3 * 60 * 1000;
+    if (s && s.online && s.api_base && fresh) {
+      API = s.api_base.replace(/\/$/, "");
+      const r = await fetch(API + "/api/config", { cache: "no-store" });
+      if (r.ok) return { ok: true, how: "노트북 공개 주소" };
+    }
+    return { ok: false, why: "분석 서버(노트북)가 꺼져 있습니다", last: s && s.updated_at };
+  } catch (e) {
+    return { ok: false, why: "분석 서버 상태를 확인하지 못했습니다 (" + e.message + ")" };
+  }
+}
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const r1 = (x) => Math.round(x * 10) / 10;
@@ -460,12 +494,30 @@ function runArea() {
 }
 
 // ================================================================== 분석 기록 (Supabase)
+async function fetchHistory() {
+  // Supabase를 직접 읽음 (노트북 서버가 꺼져 있어도 기록은 보임). 설정이 없으면 서버를 통해 읽음.
+  if (SB()) {
+    const items = await sbGet("analyses?select=id,created_at,kind,title,verdict_text,mobility,threat_level,demo&order=created_at.desc&limit=30");
+    return { enabled: true, items };
+  }
+  return api("/api/history");
+}
+
+async function fetchHistoryItem(id) {
+  if (SB()) {
+    const [row] = await sbGet(`analyses?id=eq.${encodeURIComponent(id)}&select=*`);
+    if (!row) throw new Error("기록을 찾을 수 없습니다");
+    return row;
+  }
+  return api(`/api/history/${id}`);
+}
+
 async function loadHistory() {
   const box = $("#history-list");
   $("#history-detail").innerHTML = "";
   box.innerHTML = `<p class="hint">불러오는 중...</p>`;
   try {
-    const d = await api("/api/history");
+    const d = await fetchHistory();
     if (!d.enabled) { box.innerHTML = `<div class="warn">분석 기록 저장소(Supabase)가 연결돼 있지 않습니다. 분석 서버에 SUPABASE_URL, SUPABASE_SERVICE_KEY를 설정하면 기록이 쌓입니다.</div>`; return; }
     if (d.error) { box.innerHTML = `<div class="error">${esc(d.error)}</div>`; return; }
     if (!d.items.length) { box.innerHTML = `<p class="hint">아직 저장된 분석 기록이 없습니다. 분석을 한 번 돌려 보세요.</p>`; return; }
@@ -480,7 +532,7 @@ async function showHistory(id) {
   const box = $("#history-detail");
   box.innerHTML = `<p class="hint">불러오는 중...</p>`;
   try {
-    const h = await api(`/api/history/${id}`);
+    const h = await fetchHistoryItem(id);
     box.innerHTML = `<h4>${esc(h.title)} · ${new Date(h.created_at).toLocaleString("ko-KR")}</h4>` +
       reportBlock(h.report || "", `분석기록_${h.id}.txt`);
   } catch (e) { box.innerHTML = `<div class="error">${esc(e.message)}</div>`; }
@@ -491,12 +543,36 @@ async function refreshUsage() {
 }
 
 // ================================================================== 시작
+function offlineMode(info) {
+  // 노트북 분석 서버가 꺼져 있을 때: 지난 분석 기록만 보여줌
+  const when = info.last ? ` (마지막 신호: ${new Date(info.last).toLocaleString("ko-KR")})` : "";
+  $("#banner").className = "cls-banner";
+  $("#banner").style.cssText = "background:#3d1f1f;color:#ff8a80;border-color:#c62828";
+  $("#banner").textContent = "분석 서버 꺼짐 · 지난 분석 기록만 볼 수 있습니다";
+  document.querySelector("main").insertAdjacentHTML("afterbegin",
+    `<div class="warn" style="font-size:.95rem">⚠️ ${esc(info.why)}${esc(when)}.<br>
+     새로 분석하려면 노트북에서 분석 서버(run_public.bat)가 켜져 있어야 합니다. 아래 <b>🗂️ 분석 기록</b>에서 지난 분석 결과와 보고서를 볼 수 있습니다.</div>`);
+  document.querySelectorAll('nav[data-group="main"] .tab').forEach((b) => { if (b.dataset.tab !== "history") b.disabled = true; b.style.opacity = b.dataset.tab === "history" ? 1 : .4; });
+  $("#sidebar").style.opacity = .5;
+  $("#sidebar").style.pointerEvents = "none";
+  $("#history-refresh").addEventListener("click", loadHistory);
+  $("#history-list").addEventListener("click", (e) => {
+    const a = e.target.closest("a[data-hid]"); if (!a) return;
+    e.preventDefault(); showHistory(a.dataset.hid);
+  });
+  document.querySelectorAll("nav.tabs").forEach((nav) => nav.addEventListener("click", (e) => {
+    const b = e.target.closest(".tab"); if (b && !b.disabled) showTab(nav.dataset.group, b.dataset.tab);
+  }));
+  showTab("main", "history");
+}
+
 async function init() {
+  const conn = await resolveApi();
+  if (!conn.ok) return offlineMode(conn);
   try {
     S.cfg = await api("/api/config");
   } catch (e) {
-    document.querySelector("main").insertAdjacentHTML("afterbegin", `<div class="error">분석 서버에 연결하지 못했습니다 (${esc(e.message)}). 서버가 켜져 있는지 확인하세요.</div>`);
-    return;
+    return offlineMode({ why: "분석 서버에 연결하지 못했습니다 (" + e.message + ")" });
   }
   const c = S.cfg;
   $("#demo").disabled = !c.has_key || c.live_locked;

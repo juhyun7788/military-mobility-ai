@@ -10,8 +10,17 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime, timezone
+from pathlib import Path
 
 import requests
+
+try:  # 노트북 실행: cctv_demo/.env에서 읽음
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+except ImportError:
+    pass
 
 URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
@@ -20,7 +29,9 @@ TABLE = "analyses"
 
 
 def _headers(extra: dict | None = None) -> dict:
-    h = {"apikey": KEY, "Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
+    h = {"apikey": KEY, "Content-Type": "application/json"}
+    if not KEY.startswith("sb_"):  # 예전 JWT 형식 service_role 키만 Authorization에도 넣음
+        h["Authorization"] = f"Bearer {KEY}"
     h.update(extra or {})
     return h
 
@@ -34,6 +45,22 @@ def save(row: dict) -> str | None:
         return None if r.ok else f"기록 저장 실패 (HTTP {r.status_code})"
     except Exception as e:
         return f"기록 저장 실패 ({type(e).__name__})"
+
+
+def set_status(api_base: str | None, online: bool) -> str | None:
+    """노트북 분석 서버의 현재 공개 주소와 상태를 Supabase에 알림 (웹페이지가 읽어 자동 연결)."""
+    if not ENABLED:
+        return "Supabase 설정 없음"
+    try:
+        r = requests.post(
+            f"{URL}/rest/v1/server_status",
+            json={"id": 1, "api_base": api_base, "online": online,
+                  "updated_at": datetime.now(timezone.utc).isoformat()},
+            headers=_headers({"Prefer": "resolution=merge-duplicates,return=minimal"}), timeout=15,
+        )
+        return None if r.ok else f"상태 알림 실패 (HTTP {r.status_code}: {r.text[:120]})"
+    except Exception as e:
+        return f"상태 알림 실패 ({type(e).__name__})"
 
 
 def recent(limit: int = 30) -> list[dict]:
