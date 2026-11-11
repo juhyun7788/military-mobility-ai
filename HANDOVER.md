@@ -1,6 +1,6 @@
 # 인수인계 정리 — 지능형 기동지원 군사상황 정보판단 프로그램
 
-2026-11-10 기준. 다른 계정(또는 새 Claude 대화)에서 이어서 작업할 때 **이 파일부터 읽으면** 됩니다.
+2026-11-10 기준 (2026-11-11 새 PC로 옮김 — 5절 참고). 다른 계정(또는 새 Claude 대화)에서 이어서 작업할 때 **이 파일부터 읽으면** 됩니다.
 배포·운영 세부는 `DEPLOY.md`, 기능·실행 설명은 `README.md`, 시연용 사진 출처는 `data/isr/SOURCES.md`.
 
 ---
@@ -20,7 +20,7 @@ SKKU 바이브코딩 해커톤(2026 보수교육 3기) 제출작.
 | 소스코드 (GitHub, 공개) | https://github.com/juhyun7788/military-mobility-ai |
 | 해커톤 갤러리 작품 | https://skku-vibecoding-gallery.vercel.app/project/pj_ms_mwa1tit55c7qq (제작자 표시 "AI 비전") |
 | 기록 DB (Supabase) | 프로젝트 `juhyun-Military-Aware` (ref `pmeyqgcgctvnchmvmony`), 표 `analyses`·`server_status` |
-| 로컬 폴더 | `C:\Users\prett\OneDrive\Desktop\AX 보수교육\cctv_demo` |
+| 로컬 폴더 | `C:\Users\msi\OneDrive\Desktop\AX 보수교육\cctv_demo` (2026-11-11부터. 이전 PC는 `C:\Users\prett\...`) |
 
 - 공개 사이트 **실시간 모드 비밀번호: `12345`** (포트폴리오에 공개하기로 함, `.env`의 `ADMIN_PASSCODE`)
 - 각 서비스 로그인은 원래 계정에 묶여 있음. 계정을 바꾸면 GitHub push, Vercel·Supabase 관리, 갤러리 수정 권한이 그 계정에 있는지 먼저 확인할 것.
@@ -61,8 +61,16 @@ SKKU 바이브코딩 해커톤(2026 보수교육 3기) 제출작.
 | 녹화 시연 다시 만들기 | `.venv\Scripts\python.exe deploy\make_replay.py` → commit·push |
 | 갤러리 섬네일 다시 만들기 | `.venv\Scripts\python.exe deploy\make_thumbnail.py` |
 
-- 파이썬은 가상환경 `.venv` (Python 3.12) 사용. PC에 NVIDIA GPU 없음 → CPU 추론.
-- git: `C:\Program Files\Git\cmd\git.exe`, cloudflared: `C:\Program Files (x86)\cloudflared\`.
+- 파이썬은 가상환경 `.venv` (Python 3.12) 사용. 현재 PC는 NVIDIA RTX 4060 → GPU 추론 (PyTorch 2.6.0+cu124).
+- git: `C:\Program Files\Git\cmd\git.exe`, cloudflared: `C:\Program Files (x86)\cloudflared\` (`winget install --id Cloudflare.cloudflared`).
+
+### 다른 PC로 옮길 때
+
+- `.venv`는 만든 PC의 파이썬 경로에 묶여 있어 옮기면 안 돌아감 → 새 PC에서 다시 만들기:
+  `py -3.12 -m venv .venv` → (GPU 있으면) `.venv\Scripts\python.exe -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124` → `.venv\Scripts\python.exe -m pip install -r requirements.txt`
+  (이전 PC의 가상환경은 `.venv_old_prett`로 남겨 둠, git 제외. 필요 없으면 지워도 됨)
+- `.bat` 파일은 반드시 CRLF 줄바꿈이어야 함. LF면 한글 주석 때문에 창이 바로 꺼짐 (". was unexpected at this time."). `.gitattributes`로 CRLF 고정함.
+- 분석 서버 두 개(`run_web.bat`, `run_public.bat`)는 같은 8000번 포트를 쓰므로 하나만 켤 것.
 
 ## 6. 지금까지 만든 기능 (요약)
 

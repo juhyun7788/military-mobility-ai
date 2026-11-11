@@ -18,3 +18,4 @@ data/uploads/
 # 실행에 필요한 models/yolo11n.pt(5MB), models/threat_yoloe.pt(30MB)는 올림
 models/mobileclip2_b.ts
 models/yoloe-26s-seg.pt
+.venv_old_prett/
